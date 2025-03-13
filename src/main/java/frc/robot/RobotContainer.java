@@ -178,6 +178,7 @@ public class RobotContainer {
     operator.rightTrigger().whileTrue(m_intake.Intake());
     operator.leftTrigger().whileTrue(m_intake.Outtake());
     operator.a().whileTrue(m_intake.Grab());
+    operator.b().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel1).andThen(m_intake.Intake()));
   }
 
   /**

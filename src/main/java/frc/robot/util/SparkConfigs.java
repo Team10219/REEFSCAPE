@@ -5,6 +5,7 @@
 package frc.robot.util;
 
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
+import com.revrobotics.spark.config.LimitSwitchConfig.Type;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
 /** Add your docs here. */
@@ -24,14 +25,20 @@ public class SparkConfigs {
       elevatorConfig
           .closedLoop
           .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-          .p(0.2)
-          .d(0.08)
+          .p(0.065)
+          .i(0.000007)
+          .d(0.24)
           .outputRange(-1, 1)
           .maxMotion
           .maxVelocity(4000)
           .maxAcceleration(6000)
-          .allowedClosedLoopError(0.5);
+          .allowedClosedLoopError(0.45);
       elevatorConfig.smartCurrentLimit(80).voltageCompensation(12);
+
+      elevatorConfig
+          .limitSwitch
+          .forwardLimitSwitchEnabled(true)
+          .forwardLimitSwitchType(Type.kNormallyOpen);
     }
   }
 

@@ -25,11 +25,11 @@ public class ElevatorSubsystem extends SubsystemBase {
   private SparkMax leader, follower;
   private SparkClosedLoopController elevatorClosedLoopController;
   private RelativeEncoder elevatorEncoder;
+  private RelativeEncoder followerEncoder;
 
   // private DigitalInput limitSwitch = new DigitalInput(0);
 
-  private boolean bottomLimitSwitchHit = false;
-  private boolean topLimitSwitchHit = false;
+  private boolean wasResetByLimit = false;
   private double elevatorCurrentTarget =
       ElevatorEncoderSetpoints.kSource; // Set Defualt Resting Postion
 
@@ -38,6 +38,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     follower = new SparkMax(ElevatorValues.kFollowerCAN, MotorType.kBrushless);
     elevatorClosedLoopController = leader.getClosedLoopController();
     elevatorEncoder = leader.getEncoder();
+    followerEncoder = follower.getEncoder();
 
     // Apply SparkConfigs
     SparkUtil.tryUntilOk(
@@ -98,21 +99,14 @@ public class ElevatorSubsystem extends SubsystemBase {
 
   // Spark Limit Switches
   public void resetEncoderOnLimitSwitch() {
-    if (!bottomLimitSwitchHit && leader.getReverseLimitSwitch().isPressed()) {
+    if (!wasResetByLimit
+        && (leader.getForwardLimitSwitch().isPressed()
+            || follower.getForwardLimitSwitch().isPressed())) {
       elevatorEncoder.setPosition(0);
-      bottomLimitSwitchHit = true;
-    } else if (!leader.getReverseLimitSwitch().isPressed()) {
-      bottomLimitSwitchHit = false;
-    }
-  }
-
-  public void setEncoderOnLimitSwitch() {
-    if (!topLimitSwitchHit && leader.getForwardLimitSwitch().isPressed()) {
-      leader.set(0);
-      follower.set(0);
-      topLimitSwitchHit = true;
+      followerEncoder.setPosition(0);
+      wasResetByLimit = true;
     } else if (!leader.getForwardLimitSwitch().isPressed()) {
-      topLimitSwitchHit = false;
+      wasResetByLimit = false;
     }
   }
 
@@ -130,12 +124,13 @@ public class ElevatorSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     goToSetpoint();
-    setEncoderOnLimitSwitch();
+    resetEncoderOnLimitSwitch();
 
     SmartDashboard.putNumber("Elevator Target", elevatorCurrentTarget);
     SmartDashboard.putNumber("Elevator Postion", elevatorEncoder.getPosition());
     // SmartDashboard.putBoolean("LimitSwitch State", limitSwitch.get());
-    SmartDashboard.putBoolean("Reverse LimitSwitch", leader.getReverseLimitSwitch().isPressed());
-    SmartDashboard.putBoolean("Forward LimitSwitch", leader.getForwardLimitSwitch().isPressed());
+    SmartDashboard.putBoolean("Forward LimitSwitch", follower.getForwardLimitSwitch().isPressed());
+    SmartDashboard.putBoolean("Forward LimitSwitch2", leader.getForwardLimitSwitch().isPressed());
+    SmartDashboard.putBoolean("wasResetByLimit", wasResetByLimit);
   }
 }

@@ -12,8 +12,8 @@ public class IntakeConstants {
   }
 
   public static final class IntakeSpeeds {
-    public static final double kIntakeSpeed = 1;
-    public static final double kOuttakeSpeed = -1;
+    public static final double kIntakeSpeed = 0.45;
+    public static final double kOuttakeSpeed = -0.45;
     public static final double kGrab = 0.1;
   }
 }
