@@ -85,6 +85,7 @@ public class ElevatorSubsystem extends SubsystemBase {
               elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel4;
               break;
             default:
+              elevatorCurrentTarget = ElevatorEncoderSetpoints.kSource;
               break;
           }
         });
@@ -105,21 +106,11 @@ public class ElevatorSubsystem extends SubsystemBase {
       elevatorEncoder.setPosition(0);
       followerEncoder.setPosition(0);
       wasResetByLimit = true;
-    } else if (!leader.getForwardLimitSwitch().isPressed()) {
+    } else if (!leader.getForwardLimitSwitch().isPressed()
+        || !follower.getForwardLimitSwitch().isPressed()) {
       wasResetByLimit = false;
     }
   }
-
-  // // Dio Switch
-  // public void resetEncoderOnLimitSwitch() {
-  //   if (limitSwitch.get() && !limitSwitchHit) {
-  //     elevatorEncoder.setPosition(0);
-  //     limitSwitchHit = true;
-  //   }
-  //   else if (!limitSwitch.get()) {
-  //     limitSwitchHit = false;
-  //   }
-  //  }
 
   @Override
   public void periodic() {
@@ -128,7 +119,6 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     SmartDashboard.putNumber("Elevator Target", elevatorCurrentTarget);
     SmartDashboard.putNumber("Elevator Postion", elevatorEncoder.getPosition());
-    // SmartDashboard.putBoolean("LimitSwitch State", limitSwitch.get());
     SmartDashboard.putBoolean("Forward LimitSwitch", follower.getForwardLimitSwitch().isPressed());
     SmartDashboard.putBoolean("Forward LimitSwitch2", leader.getForwardLimitSwitch().isPressed());
     SmartDashboard.putBoolean("wasResetByLimit", wasResetByLimit);
