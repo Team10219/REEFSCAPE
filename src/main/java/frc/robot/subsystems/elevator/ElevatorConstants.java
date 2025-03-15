@@ -18,9 +18,9 @@ public class ElevatorConstants {
 
   public static final class ElevatorEncoderSetpoints {
     public static final int kSource = 0;
-    public static final int kLevel1 = 7;
-    public static final int kLevel2 = 19;
-    public static final int kLevel3 = 28;
+    public static final int kLevel1 = 9;
+    public static final int kLevel2 = 18;
+    public static final int kLevel3 = 29;
     public static final int kLevel4 = 45;
   }
 

@@ -88,6 +88,8 @@ public class RobotContainer {
     NamedCommands.registerCommand("Goto L1", m_elevator.setSetpointCommand(Setpoint.kLevel1));
     NamedCommands.registerCommand("Goto L2", m_elevator.setSetpointCommand(Setpoint.kLevel2));
     NamedCommands.registerCommand("Goto L3", m_elevator.setSetpointCommand(Setpoint.kLevel3));
+    NamedCommands.registerCommand("Intake", m_intake.Intake().withTimeout(1.5));
+    NamedCommands.registerCommand("Goto Source", m_elevator.setSetpointCommand(Setpoint.kSoruce));
 
     NamedCommands.registerCommand("Auto Intake", m_intake.Grab().withTimeout(0.25));
 
@@ -153,7 +155,7 @@ public class RobotContainer {
     // Default command, normal field-relative drive
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
-            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
+            drive, () -> driver.getLeftY(), () -> driver.getLeftX(), () -> -driver.getRightX()));
 
     // Lock to 0° when A button is held
     driver
