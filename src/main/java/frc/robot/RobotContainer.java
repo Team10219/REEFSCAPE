@@ -155,7 +155,7 @@ public class RobotContainer {
     // Default command, normal field-relative drive
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
-            drive, () -> driver.getLeftY(), () -> driver.getLeftX(), () -> -driver.getRightX()));
+            drive, () -> -driver.getLeftY(), () -> -driver.getLeftX(), () -> -driver.getRightX()));
 
     // Lock to 0° when A button is held
     driver
@@ -183,10 +183,13 @@ public class RobotContainer {
     operator.povDown().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel2));
     operator.povRight().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel3));
 
+    // Scoring Button
     operator.rightTrigger().whileTrue(m_intake.Intake());
-    operator.leftTrigger().whileTrue(m_intake.Outtake());
+    operator.rightBumper().whileTrue(m_intake.SpitL1());
+
     operator.a().whileTrue(m_intake.Grab());
-    operator.b().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel1).andThen(m_intake.Intake()));
+
+    operator.leftTrigger().whileTrue(m_intake.Outtake());
   }
 
   /**

@@ -65,6 +65,11 @@ public class IntakeSubsystem extends SubsystemBase {
         () -> this.setIntakePower(IntakeSpeeds.kGrab), () -> this.setIntakePower(0));
   }
 
+  public Command SpitL1() {
+    return this.startEnd(
+        () -> this.setIntakePower(IntakeSpeeds.kL1Speed), () -> this.setIntakePower(0));
+  }
+
   @Override
   public void periodic() {
     SmartDashboard.putNumber("Intake Speed", intakeLeft.get());
