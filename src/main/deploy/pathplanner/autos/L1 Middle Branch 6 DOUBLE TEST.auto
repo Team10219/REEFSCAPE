@@ -7,37 +7,37 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Cage 2 to Branch 8"
+            "pathName": "Copy of Middle to Branch 6"
           }
         },
         {
           "type": "wait",
           "data": {
-            "waitTime": 0.5
+            "waitTime": 2.0
           }
         },
         {
           "type": "named",
           "data": {
-            "name": null
+            "name": "Goto L1"
           }
         },
         {
           "type": "wait",
           "data": {
-            "waitTime": 0.25
+            "waitTime": 2.0
           }
         },
         {
-          "type": "path",
+          "type": "named",
           "data": {
-            "pathName": "Reef 8 to Coral"
+            "name": "Intake"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "L2",
+  "folder": "L1",
   "choreoAuto": false
 }

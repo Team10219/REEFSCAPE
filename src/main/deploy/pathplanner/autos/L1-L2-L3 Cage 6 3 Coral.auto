@@ -19,7 +19,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Score L1"
+            "name": null
           }
         },
         {
@@ -55,7 +55,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Score L2"
+            "name": null
           }
         },
         {
@@ -91,7 +91,7 @@
         {
           "type": "named",
           "data": {
-            "name": "Score L3"
+            "name": null
           }
         }
       ]
