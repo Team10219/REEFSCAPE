@@ -68,31 +68,11 @@ public class RobotContainer {
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
 
-    NamedCommands.registerCommand(
-        "Score L1",
-        new SequentialCommandGroup(
-            m_elevator.setSetpointCommand(Setpoint.kLevel1),
-            m_intake.Intake().withTimeout(1.5),
-            m_elevator.setSetpointCommand(Setpoint.kSoruce)));
-    NamedCommands.registerCommand(
-        "Score L2",
-        new SequentialCommandGroup(
-            m_elevator.setSetpointCommand(Setpoint.kLevel2),
-            m_intake.Intake().withTimeout(1.5),
-            m_elevator.setSetpointCommand(Setpoint.kSoruce)));
-    NamedCommands.registerCommand(
-        "Score L3",
-        new SequentialCommandGroup(
-            m_elevator.setSetpointCommand(Setpoint.kLevel3),
-            m_intake.Intake().withTimeout(1.5),
-            m_elevator.setSetpointCommand(Setpoint.kSoruce)));
-
+    NamedCommands.registerCommand("Goto Source", m_elevator.setSetpointCommand(Setpoint.kSoruce));
     NamedCommands.registerCommand("Goto L1", m_elevator.setSetpointCommand(Setpoint.kLevel1));
     NamedCommands.registerCommand("Goto L2", m_elevator.setSetpointCommand(Setpoint.kLevel2));
     NamedCommands.registerCommand("Goto L3", m_elevator.setSetpointCommand(Setpoint.kLevel3));
     NamedCommands.registerCommand("Intake", m_intake.Intake().withTimeout(1.5));
-    NamedCommands.registerCommand("Goto Source", m_elevator.setSetpointCommand(Setpoint.kSoruce));
-
     NamedCommands.registerCommand("Auto Intake", m_intake.Grab().withTimeout(0.25));
 
     switch (Constants.currentMode) {
