@@ -22,10 +22,10 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.kControllerPorts;
+import frc.robot.commands.AutoAlignCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
@@ -75,7 +75,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("Intake", m_intake.Intake().withTimeout(1.5));
     NamedCommands.registerCommand("Auto Intake", m_intake.Grab().withTimeout(0.25));
 
-    switch (Constants.currentMode) {
+    switch (Constants.getMode()) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
         drive =
@@ -174,6 +174,9 @@ public class RobotContainer {
                             new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
                     drive)
                 .ignoringDisable(true));
+
+    driver.rightBumper().onTrue(new AutoAlignCommand(true, drive));
+    driver.leftBumper().onTrue(new AutoAlignCommand(false, drive));
 
     operator.povUp().onTrue(m_elevator.setSetpointCommand(Setpoint.kSoruce));
     operator.povLeft().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel1));

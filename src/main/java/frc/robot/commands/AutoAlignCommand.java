@@ -5,14 +5,12 @@
 package frc.robot.commands;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
-
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.drive.AutoConstants;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.drive.ModuleIOTalonFX;
 import frc.robot.util.LimelightHelpers;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
@@ -21,15 +19,25 @@ public class AutoAlignCommand extends Command {
   private PIDController xController, yController, rController;
   private boolean isRightBranch;
   private Timer dontSeeTagTimer, stopTimer;
-  private SwerveRequest.RobotCentric m_drive = new SwerveRequest.RobotCentric();
   private Drive m_drivetrain;
   private double tagID = -1;
-  
 
   public AutoAlignCommand(boolean isRightBranch, Drive m_drivetrain) {
-    xController = new PIDController(AutoConstants.X_REEF_ALIGN_P, AutoConstants.X_REEF_ALIGN_I, AutoConstants.X_REEF_ALIGN_D);
-    yController = new PIDController(AutoConstants.Y_REEF_ALIGN_P, AutoConstants.Y_REEF_ALIGN_I, AutoConstants.Y_REEF_ALIGN_D);
-    rController = new PIDController(AutoConstants.R_REEF_ALIGN_P, AutoConstants.R_REEF_ALIGN_I, AutoConstants.R_REEF_ALIGN_D);
+    xController =
+        new PIDController(
+            AutoConstants.X_REEF_ALIGN_P,
+            AutoConstants.X_REEF_ALIGN_I,
+            AutoConstants.X_REEF_ALIGN_D);
+    yController =
+        new PIDController(
+            AutoConstants.Y_REEF_ALIGN_P,
+            AutoConstants.Y_REEF_ALIGN_I,
+            AutoConstants.Y_REEF_ALIGN_D);
+    rController =
+        new PIDController(
+            AutoConstants.R_REEF_ALIGN_P,
+            AutoConstants.R_REEF_ALIGN_I,
+            AutoConstants.R_REEF_ALIGN_D);
 
     this.isRightBranch = isRightBranch;
     this.m_drivetrain = m_drivetrain;
@@ -59,7 +67,7 @@ public class AutoAlignCommand extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    if (LimelightHelpers.getTV("") && LimelightHelpers.getFiducialID("") == tagID ) {
+    if (LimelightHelpers.getTV("") && LimelightHelpers.getFiducialID("") == tagID) {
       this.dontSeeTagTimer.reset();
 
       double[] positions = LimelightHelpers.getBotPose_TargetSpace("");
@@ -71,23 +79,26 @@ public class AutoAlignCommand extends Command {
       double ySpeed = -yController.calculate(positions[0]);
       double rValue = -rController.calculate(positions[4]);
 
-      m_drivetrain.setControl(m_drive
-      .withVelocityX(xSpeed)
-      .withVelocityY(ySpeed)
-      .withRotationalRate(rValue)
-      );
-    
-     
+      m_drivetrain.setControl(xSpeed, ySpeed, rValue);
+
+      if (!rController.atSetpoint() || !yController.atSetpoint() || !xController.atSetpoint()) {
+        stopTimer.reset();
+      }
+    } else {
+      m_drivetrain.stop();
     }
   }
 
   // Called once the command ends or is interrupted.
   @Override
-  public void end(boolean interrupted) {}
+  public void end(boolean interrupted) {
+    m_drivetrain.stop();
+  }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    return false;
+    return this.dontSeeTagTimer.hasElapsed(AutoConstants.DONT_SEE_TAG_WAIT_TIME)
+        || stopTimer.hasElapsed(AutoConstants.POSE_VALIDATION_TIME);
   }
 }
