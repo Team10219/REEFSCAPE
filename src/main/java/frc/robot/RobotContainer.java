@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.kControllerPorts;
+import frc.robot.commands.AutoAlignCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.Drive;
@@ -76,6 +77,7 @@ public class RobotContainer {
 
     switch (Constants.getMode()) {
       case REAL:
+
         // Real robot, instantiate hardware IO implementations
         drive =
             new Drive(
@@ -173,7 +175,6 @@ public class RobotContainer {
                             new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
                     drive)
                 .ignoringDisable(true));
-
 
     operator.povUp().onTrue(m_elevator.setSetpointCommand(Setpoint.kSoruce));
     operator.povLeft().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel1));

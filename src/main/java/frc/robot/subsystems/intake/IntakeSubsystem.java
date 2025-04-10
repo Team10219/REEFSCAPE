@@ -8,7 +8,6 @@ import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -19,14 +18,11 @@ import frc.robot.util.SparkUtil;
 
 public class IntakeSubsystem extends SubsystemBase {
   /** Creates a new IntakeSubsystem. */
-  DigitalInput sensor;
-
   SparkMax intakeLeft, intakeRight;
 
   public IntakeSubsystem() {
     intakeLeft = new SparkMax(IntakeCans.kLeftIntakeCAN, MotorType.kBrushless); // Leader
     intakeRight = new SparkMax(IntakeCans.kRightIntakeCAN, MotorType.kBrushless);
-    sensor = new DigitalInput(1);
 
     SparkUtil.tryUntilOk(
         intakeLeft,
@@ -41,13 +37,14 @@ public class IntakeSubsystem extends SubsystemBase {
         5,
         () ->
             intakeRight.configure(
-                IntakeConfigs.intakeConfig.follow(IntakeCans.kLeftIntakeCAN, true),
+                IntakeConfigs.intakeConfig,
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters));
   }
 
   public void setIntakePower(double speed) {
     intakeLeft.set(speed);
+    intakeRight.set(speed * -1);
   }
 
   public Command Intake() {
@@ -65,9 +62,14 @@ public class IntakeSubsystem extends SubsystemBase {
         () -> this.setIntakePower(IntakeSpeeds.kGrab), () -> this.setIntakePower(0));
   }
 
+  public Command Stop() {
+    return this.startEnd(() -> this.setIntakePower(0), () -> this.setIntakePower(0));
+  }
+
   public Command SpitL1() {
-    return this.startEnd(
-        () -> this.setIntakePower(IntakeSpeeds.kL1Speed), () -> this.setIntakePower(0));
+    return this.startRun(
+        () -> this.intakeLeft.set(IntakeSpeeds.kIntakeSpeed),
+        () -> this.intakeRight.set(IntakeSpeeds.kL1Speed));
   }
 
   @Override
