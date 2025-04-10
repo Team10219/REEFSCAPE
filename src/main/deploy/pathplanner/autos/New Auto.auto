@@ -7,37 +7,49 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Cage 2 to Branch 8"
+            "pathName": "New Path"
           }
         },
         {
           "type": "wait",
           "data": {
-            "waitTime": 0.5
+            "waitTime": 2.0
           }
         },
         {
           "type": "named",
           "data": {
-            "name": null
+            "name": "Goto L1"
           }
         },
         {
           "type": "wait",
           "data": {
-            "waitTime": 0.25
+            "waitTime": 2.0
           }
         },
         {
-          "type": "path",
+          "type": "named",
           "data": {
-            "pathName": "Reef 8 to Coral"
+            "name": "Intake"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Goto Source"
           }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "L2",
+  "folder": null,
   "choreoAuto": false
 }

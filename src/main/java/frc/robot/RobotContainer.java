@@ -22,7 +22,6 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.kControllerPorts;
@@ -68,34 +67,14 @@ public class RobotContainer {
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
 
-    NamedCommands.registerCommand(
-        "Score L1",
-        new SequentialCommandGroup(
-            m_elevator.setSetpointCommand(Setpoint.kLevel1),
-            m_intake.Intake().withTimeout(1.5),
-            m_elevator.setSetpointCommand(Setpoint.kSoruce)));
-    NamedCommands.registerCommand(
-        "Score L2",
-        new SequentialCommandGroup(
-            m_elevator.setSetpointCommand(Setpoint.kLevel2),
-            m_intake.Intake().withTimeout(1.5),
-            m_elevator.setSetpointCommand(Setpoint.kSoruce)));
-    NamedCommands.registerCommand(
-        "Score L3",
-        new SequentialCommandGroup(
-            m_elevator.setSetpointCommand(Setpoint.kLevel3),
-            m_intake.Intake().withTimeout(1.5),
-            m_elevator.setSetpointCommand(Setpoint.kSoruce)));
-
+    NamedCommands.registerCommand("Goto Source", m_elevator.setSetpointCommand(Setpoint.kSoruce));
     NamedCommands.registerCommand("Goto L1", m_elevator.setSetpointCommand(Setpoint.kLevel1));
     NamedCommands.registerCommand("Goto L2", m_elevator.setSetpointCommand(Setpoint.kLevel2));
     NamedCommands.registerCommand("Goto L3", m_elevator.setSetpointCommand(Setpoint.kLevel3));
     NamedCommands.registerCommand("Intake", m_intake.Intake().withTimeout(1.5));
-    NamedCommands.registerCommand("Goto Source", m_elevator.setSetpointCommand(Setpoint.kSoruce));
-
     NamedCommands.registerCommand("Auto Intake", m_intake.Grab().withTimeout(0.25));
 
-    switch (Constants.currentMode) {
+    switch (Constants.getMode()) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
         drive =
@@ -195,6 +174,7 @@ public class RobotContainer {
                     drive)
                 .ignoringDisable(true));
 
+
     operator.povUp().onTrue(m_elevator.setSetpointCommand(Setpoint.kSoruce));
     operator.povLeft().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel1));
     operator.povDown().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel2));
@@ -202,7 +182,6 @@ public class RobotContainer {
 
     // Scoring Button
     operator.rightTrigger().whileTrue(m_intake.Intake());
-    operator.rightBumper().whileTrue(m_intake.SpitL1());
 
     operator.a().whileTrue(m_intake.Grab());
 

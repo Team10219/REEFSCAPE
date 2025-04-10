@@ -13,6 +13,8 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.RobotBase;
 
 /**
@@ -21,8 +23,28 @@ import edu.wpi.first.wpilibj.RobotBase;
  * (log replay from a file).
  */
 public final class Constants {
-  public static final Mode simMode = Mode.SIM;
-  public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : simMode;
+  public static final double loopPeriodSecs = 0.02;
+  private static RobotType robotType = RobotType.COMPBOT;
+  public static final boolean tuningMode = false;
+
+  @SuppressWarnings("resource")
+  public static RobotType getRobot() {
+    if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {
+      new Alert("Invalid robot selected, using competition robot as default.", AlertType.kError)
+          .set(true);
+      robotType = RobotType.COMPBOT;
+    }
+    return robotType;
+  }
+
+  public static Mode getMode() {
+    return switch (robotType) {
+      case COMPBOT -> RobotBase.isReal()
+          ? Mode.REAL
+          : (RobotBase.isSimulation() ? Mode.SIM : Mode.REPLAY);
+      case SIMBOT -> Mode.SIM;
+    };
+  }
 
   public static enum Mode {
     /** Running on a real robot. */
@@ -35,8 +57,28 @@ public final class Constants {
     REPLAY
   }
 
+  public enum RobotType {
+    SIMBOT,
+    COMPBOT
+  }
+
   public static class kControllerPorts {
     public static final int kDriverControllerPort = 0;
     public static final int kOperatorControllerPort = 1;
+  }
+
+  public static boolean disableHAL = false;
+
+  public static void disableHAL() {
+    disableHAL = true;
+  }
+
+  public static class CheckPullRequest {
+    public static void main(String... args) {
+      if (robotType != RobotType.COMPBOT || tuningMode) {
+        System.err.println("Do not merge, non-default constants are configured.");
+        System.exit(1);
+      }
+    }
   }
 }
