@@ -176,6 +176,11 @@ public class RobotContainer {
                     drive)
                 .ignoringDisable(true));
 
+
+    //random comment so i can push to github
+    driver.rightBumper().onTrue(new AutoAlignCommand(true, drive));
+    driver.leftBumper().onTrue(new AutoAlignCommand(false, drive));
+    
     operator.povUp().onTrue(m_elevator.setSetpointCommand(Setpoint.kSoruce));
     operator.povLeft().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel1));
     operator.povDown().onTrue(m_elevator.setSetpointCommand(Setpoint.kLevel2));
@@ -183,6 +188,7 @@ public class RobotContainer {
 
     // Scoring Button
     operator.rightTrigger().whileTrue(m_intake.Intake());
+    operator.rightBumper().whileTrue(m_intake.SpitL1());
 
     operator.a().whileTrue(m_intake.Grab());
 
