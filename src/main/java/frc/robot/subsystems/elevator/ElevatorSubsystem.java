@@ -31,7 +31,7 @@ public class ElevatorSubsystem extends SubsystemBase {
 
   private boolean wasResetByLimit = false;
   private double elevatorCurrentTarget =
-      ElevatorEncoderSetpoints.kSource; // Set Defualt Resting Postion
+      ElevatorEncoderSetpoints.kSource.get(); // Set Defualt Resting Postion
 
   public ElevatorSubsystem() {
     leader = new SparkMax(ElevatorValues.kLeaderCAN, MotorType.kBrushless);
@@ -70,22 +70,22 @@ public class ElevatorSubsystem extends SubsystemBase {
         () -> {
           switch (setpoint) {
             case kSoruce:
-              elevatorCurrentTarget = ElevatorEncoderSetpoints.kSource;
+              elevatorCurrentTarget = ElevatorEncoderSetpoints.kSource.get();
               break;
             case kLevel1:
-              elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel1;
+              elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel1.get();
               break;
             case kLevel2:
-              elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel2;
+              elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel2.get();
               break;
             case kLevel3:
-              elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel3;
+              elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel3.get();
               break;
             case kLevel4:
-              elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel4;
+              elevatorCurrentTarget = ElevatorEncoderSetpoints.kLevel4.get();
               break;
             default:
-              elevatorCurrentTarget = ElevatorEncoderSetpoints.kSource;
+              elevatorCurrentTarget = ElevatorEncoderSetpoints.kSource.get();
               break;
           }
         });

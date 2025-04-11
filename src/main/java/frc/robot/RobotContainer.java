@@ -34,6 +34,7 @@ import frc.robot.subsystems.drive.GyroIOPigeon2;
 import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOTalonFX;
+import frc.robot.subsystems.elevator.ElevatorConstants;
 import frc.robot.subsystems.elevator.ElevatorConstants.Setpoint;
 import frc.robot.subsystems.elevator.ElevatorSubsystem;
 import frc.robot.subsystems.intake.IntakeSubsystem;
@@ -55,6 +56,7 @@ public class RobotContainer {
   private Vision vision;
   private ElevatorSubsystem m_elevator = new ElevatorSubsystem();
   private IntakeSubsystem m_intake = new IntakeSubsystem();
+  private ElevatorConstants elevatorConstants;
 
   // Controller
   private final CommandXboxController driver =

@@ -80,6 +80,8 @@ public class Robot extends LoggedRobot {
     // Start AdvantageKit logger
     Logger.start();
 
+    Logger.recordMetadata("TuningMode", Boolean.toString(Constants.tuningMode));
+
     // Check for valid swerve config
     var modules =
         new SwerveModuleConstants[] {

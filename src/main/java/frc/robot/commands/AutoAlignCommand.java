@@ -4,7 +4,6 @@
 
 package frc.robot.commands;
 
-import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -12,6 +11,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.drive.AutoConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.util.LimelightHelpers;
+import frc.robot.util.LoggedTunableNumber;
 
 /* You should consider using the more terse Command factories API instead https://docs.wpilib.org/en/stable/docs/software/commandbased/organizing-command-based.html#defining-commands */
 public class AutoAlignCommand extends Command {
@@ -21,23 +21,23 @@ public class AutoAlignCommand extends Command {
   private Timer dontSeeTagTimer, stopTimer;
   private Drive m_drivetrain;
   private double tagID = -1;
+  private static final LoggedTunableNumber X_REEF_ALIGN_P =
+      new LoggedTunableNumber("AutoAlignCommand/X_Align_P", 1.5);
+  private static final LoggedTunableNumber Y_REEF_ALIGN_P =
+      new LoggedTunableNumber("AutoAlignCommand/Y_Align_P", 1.5);
+  private static final LoggedTunableNumber R_REEF_ALIGN_P =
+      new LoggedTunableNumber("AutoAlignCommand/R_Align_P", 0.1);
 
   public AutoAlignCommand(boolean isRightBranch, Drive m_drivetrain) {
     xController =
         new PIDController(
-            AutoConstants.X_REEF_ALIGN_P,
-            AutoConstants.X_REEF_ALIGN_I,
-            AutoConstants.X_REEF_ALIGN_D);
+            X_REEF_ALIGN_P.get(), AutoConstants.X_REEF_ALIGN_I, AutoConstants.X_REEF_ALIGN_D);
     yController =
         new PIDController(
-            AutoConstants.Y_REEF_ALIGN_P,
-            AutoConstants.Y_REEF_ALIGN_I,
-            AutoConstants.Y_REEF_ALIGN_D);
+            Y_REEF_ALIGN_P.get(), AutoConstants.Y_REEF_ALIGN_I, AutoConstants.Y_REEF_ALIGN_D);
     rController =
         new PIDController(
-            AutoConstants.R_REEF_ALIGN_P,
-            AutoConstants.R_REEF_ALIGN_I,
-            AutoConstants.R_REEF_ALIGN_D);
+            R_REEF_ALIGN_P.get(), AutoConstants.R_REEF_ALIGN_I, AutoConstants.R_REEF_ALIGN_D);
 
     this.isRightBranch = isRightBranch;
     this.m_drivetrain = m_drivetrain;
@@ -58,7 +58,10 @@ public class AutoAlignCommand extends Command {
     xController.setSetpoint(AutoConstants.X_SETPOINT_REEF_ALIGNMENT);
     xController.setTolerance(AutoConstants.X_TOLERANCE_REEF_ALIGNMENT);
 
-    yController.setSetpoint(AutoConstants.Y_SETPOINT_REEF_ALIGNMENT);
+    yController.setSetpoint(
+        isRightBranch
+            ? AutoConstants.Y_SETPOINT_REEF_ALIGNMENT
+            : -AutoConstants.Y_SETPOINT_REEF_ALIGNMENT);
     yController.setTolerance(AutoConstants.Y_TOLERANCE_REEF_ALIGNMENT);
 
     tagID = LimelightHelpers.getFiducialID("");

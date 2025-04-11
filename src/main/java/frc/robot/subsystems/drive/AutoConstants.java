@@ -6,15 +6,15 @@ package frc.robot.subsystems.drive;
 
 /** Add your docs here. */
 public class AutoConstants {
-  public static final double X_REEF_ALIGN_P = 3.3;
+  public static final double X_REEF_ALIGN_P = 1.5;
   public static final double X_REEF_ALIGN_I = 0;
   public static final double X_REEF_ALIGN_D = 0;
 
-  public static final double Y_REEF_ALIGN_P = 3.3;
+  public static final double Y_REEF_ALIGN_P = 1.5;
   public static final double Y_REEF_ALIGN_I = 0;
   public static final double Y_REEF_ALIGN_D = 0;
 
-  public static final double R_REEF_ALIGN_P = 0.23;
+  public static final double R_REEF_ALIGN_P = 0.1;
   public static final double R_REEF_ALIGN_I = 0;
   public static final double R_REEF_ALIGN_D = 0;
 

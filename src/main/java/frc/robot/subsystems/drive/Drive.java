@@ -52,6 +52,8 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.util.LocalADStarAK;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -266,7 +268,7 @@ public class Drive extends SubsystemBase {
     kinematics.resetHeadings(headings);
     stop();
   }
-
+  @AutoLogOutput(key = "SwerveStates/AutoAlignStates")
   public void setControl(double xSpeed, double ySpeed, double rValue) {
     ChassisSpeeds speeds = new ChassisSpeeds(xSpeed, ySpeed, rValue);
     runVelocity(speeds);

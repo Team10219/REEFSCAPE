@@ -5,6 +5,7 @@
 package frc.robot.subsystems.elevator;
 
 import edu.wpi.first.math.util.Units;
+import frc.robot.util.LoggedTunableNumber;
 
 /** Add your docs here. */
 public class ElevatorConstants {
@@ -17,11 +18,22 @@ public class ElevatorConstants {
   }
 
   public static final class ElevatorEncoderSetpoints {
-    public static final int kSource = 0;
-    public static final int kLevel1 = 9;
-    public static final int kLevel2 = 18;
-    public static final int kLevel3 = 29;
-    public static final int kLevel4 = 45;
+    public static final LoggedTunableNumber kSource =
+        new LoggedTunableNumber("Elevator/kSource", 0);
+    public static final LoggedTunableNumber kLevel1 =
+        new LoggedTunableNumber("Elevator/kLevel1", 9);
+    public static final LoggedTunableNumber kLevel2 =
+        new LoggedTunableNumber("Elevator/kLevel2", 18);
+    public static final LoggedTunableNumber kLevel3 =
+        new LoggedTunableNumber("Elevator/kLevel3", 29);
+    public static final LoggedTunableNumber kLevel4 =
+        new LoggedTunableNumber("Elevator/kLevel4", 45);
+
+    // public static final int kSource = 0;
+    // public static final int kLevel1 = 9;
+    // public static final int kLevel2 = 18;
+    // public static final int kLevel3 = 29;
+    // public static final int kLevel4 = 45;
   }
 
   public static final class ElevatorValues {
