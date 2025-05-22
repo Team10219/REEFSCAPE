@@ -91,29 +91,6 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
               1),
           getModuleTranslations());
 
-  // public static DriveTrainSimulationConfig mapleSimConfig = null;
-
-  // @SuppressWarnings("unchecked")
-  // public void startMapleSimThread() {
-  //   mapleSimConfig =
-  //       DriveTrainSimulationConfig.Default()
-  //           .withRobotMass(Pounds.of(115))
-  //           .withBumperSize(Inches.of(33.5), Inches.of(33.5))
-  //           .withCustomModuleTranslations(getModuleTranslations())
-  //           .withGyro(COTS.ofPigeon2())
-  //           .withSwerveModule(
-  //               new SwerveModuleSimulationConfig(
-  //                   DCMotor.getKrakenX60(1),
-  //                   DCMotor.getKrakenX60(1),
-  //                   TunerConstants.FrontLeft.DriveMotorGearRatio,
-  //                   TunerConstants.FrontLeft.SteerMotorGearRatio,
-  //                   Volts.of(TunerConstants.FrontLeft.DriveFrictionVoltage),
-  //                   Volts.of(TunerConstants.FrontLeft.SteerFrictionVoltage),
-  //                   Inches.of(1.8),
-  //                   KilogramSquareMeters.of(TunerConstants.FrontLeft.SteerInertia),
-  //                   WHEEL_COF));
-  // }
-
   public static final DriveTrainSimulationConfig mapleSimConfig =
       DriveTrainSimulationConfig.Default()
           .withRobotMass(Kilograms.of(ROBOT_MASS_KG))
@@ -122,7 +99,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
           .withSwerveModule(
               new SwerveModuleSimulationConfig(
                   DCMotor.getKrakenX60(1),
-                  DCMotor.getKrakenX60(1),
+                  DCMotor.getFalcon500(1),
                   TunerConstants.FrontLeft.DriveMotorGearRatio,
                   TunerConstants.FrontLeft.SteerMotorGearRatio,
                   Volts.of(TunerConstants.FrontLeft.DriveFrictionVoltage),
@@ -315,6 +292,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     }
     kinematics.resetHeadings(headings);
     stop();
+  }
+
+  public void setControl(double xSpeed, double ySpeed, double rValue) {
+    ChassisSpeeds speeds = new ChassisSpeeds(xSpeed, ySpeed, rValue);
+    runVelocity(speeds);
   }
 
   /** Returns a command to run a quasistatic test in the specified direction. */
