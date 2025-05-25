@@ -99,13 +99,13 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
           .withSwerveModule(
               new SwerveModuleSimulationConfig(
                   DCMotor.getKrakenX60(1),
-                  DCMotor.getFalcon500(1),
+                  DCMotor.getKrakenX60(1),
                   TunerConstants.FrontLeft.DriveMotorGearRatio,
                   TunerConstants.FrontLeft.SteerMotorGearRatio,
-                  Volts.of(TunerConstants.FrontLeft.DriveFrictionVoltage),
-                  Volts.of(TunerConstants.FrontLeft.SteerFrictionVoltage),
+                  Volts.of(0.3),
+                  Volts.of(0.5),
                   Meters.of(TunerConstants.FrontLeft.WheelRadius),
-                  KilogramSquareMeters.of(TunerConstants.FrontLeft.SteerInertia),
+                  KilogramSquareMeters.of(0.05),
                   WHEEL_COF));
 
   static final Lock odometryLock = new ReentrantLock();
