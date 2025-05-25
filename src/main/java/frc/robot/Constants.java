@@ -25,7 +25,7 @@ import edu.wpi.first.wpilibj.RobotBase;
 public final class Constants {
   public static final double loopPeriodSecs = 0.02;
   private static RobotType robotType = RobotType.SIMBOT;
-  public static final boolean tuningMode = true;
+  public static final boolean tuningMode = false;
 
   @SuppressWarnings("resource")
   public static RobotType getRobot() {
@@ -60,11 +60,6 @@ public final class Constants {
   public enum RobotType {
     SIMBOT,
     COMPBOT
-  }
-
-  public static class kControllerPorts {
-    public static final int kDriverControllerPort = 0;
-    public static final int kOperatorControllerPort = 1;
   }
 
   public static boolean disableHAL = false;

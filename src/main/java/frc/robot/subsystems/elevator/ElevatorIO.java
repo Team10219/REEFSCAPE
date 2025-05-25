@@ -10,29 +10,36 @@ import org.littletonrobotics.junction.AutoLog;
 public interface ElevatorIO {
   @AutoLog
   public static class ElevatorIOInputs {
-    boolean leaderConnected;
-    boolean followerConnected;
-    double leaderTemp;
-    double followerTemp;
-    double position;
-    double velocity;
-    double target;
+    boolean leaderConnected = false;
+    boolean followerConnected = false;
+    double leaderTemp = 0.0;
+    double followerTemp = 0.0;
+    double position = 0.0;
+    double velocity = 0.0;
+    double target = 0.0;
     boolean bottomLimit = false;
   }
 
-  public void update(ElevatorIOInputs inputs);
+  public default void update(ElevatorIOInputs inputs) {}
+  ;
 
-  public void setPower(double power);
+  public default void setPower(double power) {}
+  ;
 
-  public void setVoltage(double voltage);
+  public default void setVoltage(double voltage) {}
+  ;
 
-  public void setPosition(double encoderValue);
+  public default void setPosition(double encoderValue) {}
+  ;
 
-  public void stop();
+  public default void stop() {}
+  ;
 
-  public void zero();
+  public default void zero() {}
+  ;
 
-  public void brakeMode(boolean brakeEnabled);
+  public default void brakeMode(boolean brakeEnabled) {}
+  ;
 
   public default void simulationPeriodic() {}
 }

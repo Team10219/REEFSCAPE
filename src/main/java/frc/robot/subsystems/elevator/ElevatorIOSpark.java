@@ -4,7 +4,6 @@
 
 package frc.robot.subsystems.elevator;
 
-import static frc.robot.subsystems.elevator.ElevatorConstants.*;
 import static frc.robot.util.SparkUtil.*;
 
 import com.revrobotics.RelativeEncoder;
@@ -46,8 +45,8 @@ public class ElevatorIOSpark implements ElevatorIO {
   private ElevatorSim elevatorSim;
 
   public ElevatorIOSpark() {
-    leader = new SparkMax(ElevatorCAN.leaderCAN, MotorType.kBrushless);
-    follower = new SparkMax(ElevatorCAN.followerCAN, MotorType.kBrushless);
+    leader = new SparkMax(2, MotorType.kBrushless);
+    follower = new SparkMax(3, MotorType.kBrushless);
     elevatorClosedLoopController = leader.getClosedLoopController();
     motors = List.of(leader, follower);
     leaderEncoder = leader.getEncoder();
@@ -85,7 +84,7 @@ public class ElevatorIOSpark implements ElevatorIO {
         5,
         () ->
             follower.configure(
-                config.follow(ElevatorCAN.leaderCAN, true),
+                config.follow(2, true),
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters));
     if (Robot.isReal()) return;

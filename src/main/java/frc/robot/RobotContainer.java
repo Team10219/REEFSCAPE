@@ -19,6 +19,7 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -28,8 +29,11 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.oi.DriverControls;
 import frc.robot.oi.DriverControlsXbox;
+import frc.robot.oi.OperatorControls;
+import frc.robot.oi.OperatorControlsXbox;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.elevator.Elevator;
+import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSim;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
 import frc.robot.subsystems.vision.*;
@@ -50,7 +54,8 @@ public class RobotContainer {
   private Vision vision;
   private Elevator elevator;
 
-  private DriverControls driverControls;
+  private DriverControls driver;
+  private OperatorControls operator;
 
   private SwerveDriveSimulation driveSimulation = null;
 
@@ -60,6 +65,7 @@ public class RobotContainer {
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public static RobotContainer instance;
 
+  @SuppressWarnings("unused")
   public RobotContainer() {
     if (Constants.getMode() != Constants.Mode.REPLAY) {
       switch (Constants.getRobot()) {
@@ -101,78 +107,81 @@ public class RobotContainer {
                       camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose));
           elevator = new Elevator(new ElevatorIOSim());
           break;
-
-        default:
-          // Replayed robot, disable IO implementations
-          drive =
-              new Drive(
-                  new GyroIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {},
-                  new ModuleIO() {},
-                  (pose) -> {});
-          vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
-          elevator = new Elevator(new ElevatorIOSim());
-          break;
       }
+    }
+
+    // Replayed robot, disable IO implementations
+    if (drive == null) {
+      drive =
+          new Drive(
+              new GyroIO() {},
+              new ModuleIO() {},
+              new ModuleIO() {},
+              new ModuleIO() {},
+              new ModuleIO() {},
+              (pose) -> {});
+    }
+    if (vision == null) {
+      vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
+    }
+    if (elevator == null) {
+      elevator = new Elevator(new ElevatorIO() {});
     }
 
     // Set up auto routines
     autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
 
     // Set up SysId routines
-    autoChooser.addOption(
-        "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
-    autoChooser.addOption(
-        "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
-    autoChooser.addOption(
-        "Drive SysId (Quasistatic Forward)",
-        drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
-    autoChooser.addOption(
-        "Drive SysId (Quasistatic Reverse)",
-        drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-    autoChooser.addOption(
-        "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
-    autoChooser.addOption(
-        "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+    if (Constants.tuningMode == true) {
+      autoChooser.addOption(
+          "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
+      autoChooser.addOption(
+          "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
+      autoChooser.addOption(
+          "Drive SysId (Quasistatic Forward)",
+          drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
+      autoChooser.addOption(
+          "Drive SysId (Quasistatic Reverse)",
+          drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
+      autoChooser.addOption(
+          "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
+      autoChooser.addOption(
+          "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
+    }
 
-    // Configure the button bindings
     configureControllers();
     configureButtonBindings();
   }
 
   private void configureControllers() {
-    driverControls = new DriverControlsXbox(0);
+    driver = new DriverControlsXbox(0);
+    operator = new OperatorControlsXbox(1);
   }
 
+  @SuppressWarnings("static-access")
   private void configureButtonBindings() {
     // Default command, normal field-relative drive
     drive.setDefaultCommand(
-        DriveCommands.joystickDrive(
-            drive, driverControls::getForward, driverControls::getStrafe, driverControls::getTurn));
+        DriveCommands.joystickDrive(drive, driver::getForward, driver::getStrafe, driver::getTurn));
 
     // Lock to 0° when A button is held
-    driverControls
+    driver
         .lockToZero()
         .whileTrue(
             DriveCommands.joystickDriveAtAngle(
-                drive,
-                driverControls::getForward,
-                driverControls::getStrafe,
-                () -> new Rotation2d()));
+                drive, driver::getForward, driver::getStrafe, () -> new Rotation2d()));
 
-    driverControls
+    driver
         .reefFace()
         .whileTrue(
             DriveCommands.joystickDriveAtAngle(
                 drive,
-                driverControls::getForward,
-                driverControls::getStrafe,
+                driver::getForward,
+                driver::getStrafe,
                 () -> new Rotation2d().fromDegrees(60)));
 
     // Switch to X pattern when X button is pressed
-    driverControls.xWheels().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    driver.xWheels().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // Reset gyro / odometry
     final Runnable resetGyro =
@@ -181,11 +190,13 @@ public class RobotContainer {
             : () ->
                 drive.setPose(
                     new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
-    driverControls
-        .resetFieldCentric()
-        .onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+    driver.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-    driverControls.autoAlign(false).onTrue(new AutoAlignCommand(false, drive));
+    driver.autoAlign(false).onTrue(new AutoAlignCommand(false, drive));
+
+    operator.Level1().onTrue(elevator.setPosition(elevator.Level1.getAsDouble()));
+
+    DriverStation.silenceJoystickConnectionWarning(true);
   }
 
   public Command getAutonomousCommand() {
