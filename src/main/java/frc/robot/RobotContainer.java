@@ -19,15 +19,15 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.RobotType;
+import frc.robot.commands.AutoAlignCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
+import frc.robot.oi.DriverControls;
+import frc.robot.oi.DriverControlsXbox;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIOSim;
@@ -50,15 +50,16 @@ public class RobotContainer {
   private Vision vision;
   private Elevator elevator;
 
-  private SwerveDriveSimulation driveSimulation = null;
+  private DriverControls driverControls;
 
-  // Controller
-  private final CommandXboxController controller = new CommandXboxController(0);
+  private SwerveDriveSimulation driveSimulation = null;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
+  public static RobotContainer instance;
+
   public RobotContainer() {
     if (Constants.getMode() != Constants.Mode.REPLAY) {
       switch (Constants.getRobot()) {
@@ -137,95 +138,56 @@ public class RobotContainer {
         "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
 
     // Configure the button bindings
+    configureControllers();
     configureButtonBindings();
   }
 
-  /**
-   * Use this method to define your button->command mappings. Buttons can be created by
-   * instantiating a {@link GenericHID} or one of its subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
-   * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-   */
+  private void configureControllers() {
+    driverControls = new DriverControlsXbox(0);
+  }
+
   private void configureButtonBindings() {
     // Default command, normal field-relative drive
     drive.setDefaultCommand(
         DriveCommands.joystickDrive(
-            drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+            drive, driverControls::getForward, driverControls::getStrafe, driverControls::getTurn));
 
     // Lock to 0° when A button is held
-    controller
-        .a()
+    driverControls
+        .lockToZero()
         .whileTrue(
             DriveCommands.joystickDriveAtAngle(
                 drive,
-                () -> controller.getLeftY(),
-                () -> controller.getLeftX(),
+                driverControls::getForward,
+                driverControls::getStrafe,
                 () -> new Rotation2d()));
 
+    driverControls
+        .reefFace()
+        .whileTrue(
+            DriveCommands.joystickDriveAtAngle(
+                drive,
+                driverControls::getForward,
+                driverControls::getStrafe,
+                () -> new Rotation2d().fromDegrees(60)));
+
     // Switch to X pattern when X button is pressed
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    driverControls.xWheels().onTrue(Commands.runOnce(drive::stopWithX, drive));
 
     // Reset gyro / odometry
     final Runnable resetGyro =
         Constants.getRobot() == RobotType.SIMBOT
-            ? () ->
-                drive.setPose(
-                    driveSimulation
-                        .getSimulatedDriveTrainPose()) // reset odometry to actual robot pose during
-            // simulation
+            ? () -> drive.setPose(driveSimulation.getSimulatedDriveTrainPose())
             : () ->
                 drive.setPose(
                     new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
-    controller.start().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+    driverControls
+        .resetFieldCentric()
+        .onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-    // Example Coral Placement Code
-    // TODO: delete these code for your own project
-    // if (Constants.getRobot() == RobotType.SIMBOT) {
-    //   // L4 placement
-    //   controller
-    //       .y()
-    //       .onTrue(
-    //           Commands.runOnce(
-    //               () ->
-    //                   SimulatedArena.getInstance()
-    //                       .addGamePieceProjectile(
-    //                           new ReefscapeCoralOnFly(
-    //                               driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
-    //                               new Translation2d(0.4, 0),
-    //                               driveSimulation
-    //                                   .getDriveTrainSimulatedChassisSpeedsFieldRelative(),
-    //                               driveSimulation.getSimulatedDriveTrainPose().getRotation(),
-    //                               Meters.of(2),
-    //                               MetersPerSecond.of(1.5),
-    //                               Degrees.of(-80)))));
-    //   // L3 placement
-    //   controller
-    //       .b()
-    //       .onTrue(
-    //           Commands.runOnce(
-    //               () ->
-    //                   SimulatedArena.getInstance()
-    //                       .addGamePieceProjectile(
-    //                           new ReefscapeCoralOnFly(
-    //                               driveSimulation.getSimulatedDriveTrainPose().getTranslation(),
-    //                               new Translation2d(0.4, 0),
-    //                               driveSimulation
-    //                                   .getDriveTrainSimulatedChassisSpeedsFieldRelative(),
-    //                               driveSimulation.getSimulatedDriveTrainPose().getRotation(),
-    //                               Meters.of(1.35),
-    //                               MetersPerSecond.of(1.5),
-    //                               Degrees.of(-60)))));
-    // }
+    driverControls.autoAlign(false).onTrue(new AutoAlignCommand(false, drive));
   }
 
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
   public Command getAutonomousCommand() {
     return autoChooser.get();
   }
