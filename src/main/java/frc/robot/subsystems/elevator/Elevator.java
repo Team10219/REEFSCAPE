@@ -51,7 +51,7 @@ public class Elevator extends SubsystemBase {
     Logger.processInputs("Elevator", inputs);
 
     // Homing logic
-    if (isAtLowerLimit() && Math.abs(inputs.position) <= 0.001) {
+    if (isAtLowerLimit() && Math.abs(inputs.positionRadsSec) <= 0.001) {
       hasHomed = true;
     }
 
@@ -59,7 +59,7 @@ public class Elevator extends SubsystemBase {
 
     // Log target and actual positions
     Logger.recordOutput("Elevator/TargetPosition", targetPosition);
-    Logger.recordOutput("Elevator/CurrentPosition", inputs.position);
+    Logger.recordOutput("Elevator/CurrentPosition", inputs.positionRadsSec);
   }
 
   @Override
@@ -68,7 +68,7 @@ public class Elevator extends SubsystemBase {
   }
 
   public double getPositionMeters() {
-    return inputs.position;
+    return inputs.positionRadsSec;
   }
 
   public Command runSpeed(double speed) {
@@ -120,6 +120,6 @@ public class Elevator extends SubsystemBase {
 
   @AutoLogOutput(key = "Elevator/elevatorAtTarget")
   public boolean isElevatorInPosition() {
-    return Math.abs(targetPosition - inputs.position) <= inPositionTolerance;
+    return Math.abs(targetPosition - inputs.positionRadsSec) <= inPositionTolerance;
   }
 }

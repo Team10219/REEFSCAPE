@@ -39,4 +39,9 @@ public class OperatorControlsXbox implements OperatorControls {
   public Trigger Level4() {
     return null; // We can't do L4 rn
   }
+
+  @Override
+  public Trigger Intake() {
+    return operator.rightTrigger();
+  }
 }

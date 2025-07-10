@@ -17,4 +17,6 @@ public interface OperatorControls {
   public Trigger Level3();
 
   public Trigger Level4();
+
+  public Trigger Intake();
 }

@@ -40,7 +40,7 @@ public class ElevatorIOSim implements ElevatorIO {
       speed = Math.max(-1, Math.min(1, speed));
     }
 
-    inputs.position = position;
+    inputs.positionRadsSec = position;
     inputs.velocity = speed * 8; // Simulated velocity
     inputs.target = target;
   }

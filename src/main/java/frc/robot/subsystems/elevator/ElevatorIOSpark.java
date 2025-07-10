@@ -20,6 +20,7 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
+import frc.robot.Constants;
 import frc.robot.Robot;
 import java.util.List;
 
@@ -122,7 +123,7 @@ public class ElevatorIOSpark implements ElevatorIO {
     inputs.followerConnected = followerConnectedDebounce.calculate(!sparkStickyFault);
     inputs.leaderTemp = leader.getMotorTemperature();
     inputs.followerTemp = follower.getMotorTemperature();
-    inputs.position = position;
+    inputs.positionRadsSec = position;
     inputs.velocity = velocity;
     inputs.target = target;
     inputs.bottomLimit = false;
@@ -130,8 +131,9 @@ public class ElevatorIOSpark implements ElevatorIO {
 
   @Override
   public void simulationPeriodic() {
-    elevatorSim.setInputVoltage(leader.getAppliedOutput() * 12);
-    elevatorSim.update(0.02);
+    elevatorSim.setInputVoltage(
+        (leaderSim.getAppliedOutput() + followerSim.getAppliedOutput()) * 12);
+    elevatorSim.update(Constants.loopPeriodSecs);
 
     motorSims.forEach(
         motorSim -> {

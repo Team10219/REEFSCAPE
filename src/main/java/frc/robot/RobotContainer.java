@@ -36,6 +36,8 @@ import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSim;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
+import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIOSpark;
 import frc.robot.subsystems.vision.*;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
@@ -53,6 +55,7 @@ public class RobotContainer {
   private Drive drive;
   private Vision vision;
   private Elevator elevator;
+  private Intake intake;
 
   private DriverControls driver;
   private OperatorControls operator;
@@ -83,6 +86,7 @@ public class RobotContainer {
               new Vision(
                   drive, new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation));
           elevator = new Elevator(new ElevatorIOSpark());
+          intake = new Intake(new IntakeIOSpark());
 
           break;
         case SIMBOT:
@@ -106,6 +110,7 @@ public class RobotContainer {
                   new VisionIOPhotonVisionSim(
                       camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose));
           elevator = new Elevator(new ElevatorIOSim());
+          // intake = new Intake(new IntakeIOSim());
           break;
       }
     }
@@ -196,6 +201,8 @@ public class RobotContainer {
 
     operator.Level1().onTrue(elevator.setPosition(elevator.Level1.getAsDouble()));
 
+    operator.Intake().whileTrue(intake.setVeloctiy(1, 1));
+
     DriverStation.silenceJoystickConnectionWarning(true);
   }
 
@@ -214,6 +221,7 @@ public class RobotContainer {
     if (Constants.getRobot() != RobotType.SIMBOT) return;
 
     SimulatedArena.getInstance().simulationPeriodic();
+
     Logger.recordOutput(
         "FieldSimulation/RobotPosition", driveSimulation.getSimulatedDriveTrainPose());
     Logger.recordOutput(

@@ -14,32 +14,25 @@ public interface ElevatorIO {
     boolean followerConnected = false;
     double leaderTemp = 0.0;
     double followerTemp = 0.0;
-    double position = 0.0;
+    double positionRadsSec = 0.0;
     double velocity = 0.0;
     double target = 0.0;
     boolean bottomLimit = false;
   }
 
   public default void update(ElevatorIOInputs inputs) {}
-  ;
 
   public default void setPower(double power) {}
-  ;
 
   public default void setVoltage(double voltage) {}
-  ;
 
   public default void setPosition(double encoderValue) {}
-  ;
 
   public default void stop() {}
-  ;
 
   public default void zero() {}
-  ;
 
-  public default void brakeMode(boolean brakeEnabled) {}
-  ;
+  public default void brakeMode(boolean enabled) {}
 
   public default void simulationPeriodic() {}
 }
