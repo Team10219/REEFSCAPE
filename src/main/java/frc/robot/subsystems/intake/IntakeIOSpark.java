@@ -16,6 +16,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -34,6 +35,10 @@ public class IntakeIOSpark implements IntakeIO {
   private final double wheelCircumference = Math.PI * wheelDiameterMeters;
 
   private final double MOI = 0.2;
+  private final double Kv = 473;
+  private int currentLimit = 30;
+  private int freeLimit = 40;
+  private boolean brakeModeEnabled = true;
 
   private final SparkMax left, right;
   private final RelativeEncoder leftEncoder, rightEncoder;
@@ -60,11 +65,15 @@ public class IntakeIOSpark implements IntakeIO {
 
     config = new SparkMaxConfig();
 
-    config.smartCurrentLimit(50).voltageCompensation(12);
+    
     config
+        .idleMode(brakeModeEnabled ? SparkBaseConfig.IdleMode.kBrake : SparkBaseConfig.IdleMode.kCoast)
+        .smartCurrentLimit(currentLimit, freeLimit)
+        .voltageCompensation(12.0)
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .p(0.1)
+        .velocityFF(1/Kv)
         .maxMotion
         .maxAcceleration(4000)
         .maxVelocity(4000);
@@ -80,6 +89,8 @@ public class IntakeIOSpark implements IntakeIO {
         () ->
             right.configure(
                 config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
+    tryUntilOk(left, 5, () -> leftEncoder.setPosition(0));
+    tryUntilOk(right, 5, () -> rightEncoder.setPosition(0));
 
     if (RobotBase.isReal()) return;
 
@@ -112,10 +123,6 @@ public class IntakeIOSpark implements IntakeIO {
     rightSim.setMotorCurrent(rightIntakeSim.getCurrentDrawAmps());
   }
 
-  // @Override
-  // public void intake() {
-  //   setVelocity(, null, MOI, null);
-  // }
 
   @Override
   public void setPower(double leftPower, double rightPower) {
@@ -125,7 +132,7 @@ public class IntakeIOSpark implements IntakeIO {
   @Override
   public void setVoltage(double leftVolts, double rightVolts) {
     left.setVoltage(leftVolts);
-    right.setVoltage(rightVolts);
+    right.setVoltage(-rightVolts);
   }
 
   @Override
@@ -156,15 +163,20 @@ public class IntakeIOSpark implements IntakeIO {
 
   @Override
   public void brakeMode(boolean enabled) {
-    motors.forEach(
-        motor ->
-            tryUntilOk(
-                motor,
-                5,
-                () ->
-                    motor.configure(
-                        config.idleMode(enabled ? IdleMode.kBrake : IdleMode.kCoast),
-                        ResetMode.kResetSafeParameters,
-                        PersistMode.kPersistParameters)));
+    if (brakeModeEnabled == enabled) return;
+    brakeModeEnabled = enabled;
+    new Thread(
+      () ->
+      motors.forEach(
+          motor ->
+              tryUntilOk(
+                  motor,
+                  5,
+                  () ->
+                      motor.configure(
+                          config.idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast),
+                          ResetMode.kResetSafeParameters,
+                          PersistMode.kPersistParameters))))
+        .start(); 
   }
 }

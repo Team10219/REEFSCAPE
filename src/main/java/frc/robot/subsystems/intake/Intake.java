@@ -4,6 +4,8 @@
 
 package frc.robot.subsystems.intake;
 
+
+import static com.revrobotics.spark.SparkBase.ControlType.*;
 import com.revrobotics.spark.SparkBase.ControlType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -48,5 +50,9 @@ public class Intake extends SubsystemBase {
 
   public Command setVoltage(double leftVolts, double rightVolts) {
     return Commands.runEnd(() -> io.setVoltage(leftVolts, rightVolts), () -> io.stop());
+  }
+
+  public Command Intake() {
+    return Commands.runEnd(() -> io.setVelocity(0, kMAXMotionVelocityControl, 0, kMAXMotionVelocityControl), () -> io.stop());
   }
 }

@@ -23,9 +23,11 @@ public interface IntakeIO {
 
   public default void setVelocity(
       double leftVel,
-      SparkBase.ControlType leftControlType,
+      SparkBase.ControlType controlTypeLeft,
       double rightVel,
-      SparkBase.ControlType rightControlType) {}
+      SparkBase.ControlType controlTypeRight) {}
+
+  public default void setControlType(SparkBase.ControlType left, SparkBase.ControlType right) {}
 
   public default void setPower(double leftPower, double rightPower) {}
 

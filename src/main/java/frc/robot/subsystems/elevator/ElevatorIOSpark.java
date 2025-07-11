@@ -16,6 +16,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -33,6 +34,10 @@ public class ElevatorIOSpark implements ElevatorIO {
   final RelativeEncoder leaderEncoder;
   final List<SparkMax> motors;
   private final SparkMaxConfig config;
+
+  private boolean brakeModeEnabled = true;
+  private int currentLimit = 60;
+  private int freeLimit = 80;
 
   final double position;
   final double velocity;
@@ -62,6 +67,7 @@ public class ElevatorIOSpark implements ElevatorIO {
 
     config.inverted(inverted);
     config
+        .idleMode(brakeModeEnabled ? SparkBaseConfig.IdleMode.kBrake : SparkBaseConfig.IdleMode.kCoast)
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
         .p(0.065)
@@ -72,7 +78,7 @@ public class ElevatorIOSpark implements ElevatorIO {
         .maxVelocity(4000)
         .maxAcceleration(6000)
         .allowedClosedLoopError(0.45);
-    config.smartCurrentLimit(80).voltageCompensation(12);
+    config.smartCurrentLimit(currentLimit, freeLimit).voltageCompensation(12);
 
     tryUntilOk(
         leader,
@@ -154,7 +160,7 @@ public class ElevatorIOSpark implements ElevatorIO {
   }
 
   @Override
-  public void brakeMode(boolean brakeEnabled) {
+  public void brakeMode(boolean enabled) {
     motors.forEach(
         motor ->
             tryUntilOk(
@@ -162,7 +168,7 @@ public class ElevatorIOSpark implements ElevatorIO {
                 5,
                 () ->
                     motor.configure(
-                        config.idleMode(brakeEnabled ? IdleMode.kBrake : IdleMode.kCoast),
+                        config.idleMode(enabled ? IdleMode.kBrake : IdleMode.kCoast),
                         ResetMode.kResetSafeParameters,
                         PersistMode.kPersistParameters)));
   }
