@@ -4,172 +4,169 @@
 
 package frc.robot.subsystems.elevator;
 
+import static frc.robot.canID.ElevatorID.*;
 import static frc.robot.util.SparkUtil.*;
 
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.sim.SparkMaxSim;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.wpilibj.simulation.ElevatorSim;
-import frc.robot.Constants;
-import frc.robot.Robot;
-import java.util.List;
+import frc.robot.util.TrackedController;
+import java.util.function.DoubleSupplier;
 
-/** Add your docs here. */
+/**
+ * follower always follows leader, for the commands i only run the leader and i set the config for
+ * the follower to run inverted the leader
+ */
 public class ElevatorIOSpark implements ElevatorIO {
-  final double elevatorGearing = 9.0;
+  private final SparkMax leaderSpark;
+  private final RelativeEncoder leaderEncoder;
+  private final TrackedController elevatorController;
 
-  final SparkMax leader, follower;
-  final SparkClosedLoopController elevatorClosedLoopController;
-  final RelativeEncoder leaderEncoder;
-  final List<SparkMax> motors;
+  private final SparkMax followerSpark;
+  private final RelativeEncoder followerEncoder;
+
   private final SparkMaxConfig config;
 
+  private double maxAcceleration = 10000;
+  private double maxVelocity = 4000;
+  private int currentLimit = 80;
+  private int freeLimit = 70;
   private boolean brakeModeEnabled = true;
-  private int currentLimit = 60;
-  private int freeLimit = 80;
-
-  final double position;
-  final double velocity;
-  double target;
-
-  private final Debouncer leaderConnectedDebounce = new Debouncer(0.5);
-  private final Debouncer followerConnectedDebounce = new Debouncer(0.5);
-
-  private SparkMaxSim leaderSim, followerSim;
-  private List<SparkMaxSim> motorSims;
-  private ElevatorSim elevatorSim;
 
   public ElevatorIOSpark() {
-    leader = new SparkMax(2, MotorType.kBrushless);
-    follower = new SparkMax(3, MotorType.kBrushless);
-    elevatorClosedLoopController = leader.getClosedLoopController();
-    motors = List.of(leader, follower);
-    leaderEncoder = leader.getEncoder();
+    leaderSpark = new SparkMax(leader, MotorType.kBrushless);
+    leaderEncoder = leaderSpark.getEncoder();
+    elevatorController = new TrackedController(leaderSpark.getClosedLoopController());
 
-    position = leaderEncoder.getPosition();
-    velocity = leaderEncoder.getVelocity();
-
-    target = 0.0;
+    followerSpark = new SparkMax(follower, MotorType.kBrushless);
+    followerEncoder = followerSpark.getEncoder();
 
     config = new SparkMaxConfig();
-    final boolean inverted = false;
-
-    config.inverted(inverted);
     config
-        .idleMode(brakeModeEnabled ? SparkBaseConfig.IdleMode.kBrake : SparkBaseConfig.IdleMode.kCoast)
+        .idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast)
+        .smartCurrentLimit(currentLimit, freeLimit)
+        .voltageCompensation(12.0);
+    config.encoder.uvwMeasurementPeriod(10).uvwAverageDepth(2);
+    config
+        .signals
+        .primaryEncoderPositionAlwaysOn(true)
+        .primaryEncoderPositionPeriodMs(20)
+        .primaryEncoderVelocityAlwaysOn(true)
+        .primaryEncoderVelocityPeriodMs(20)
+        .appliedOutputPeriodMs(20)
+        .busVoltagePeriodMs(20)
+        .outputCurrentPeriodMs(20);
+    config
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .p(0.065)
-        .i(0.000007)
-        .d(0.24)
-        .outputRange(-1, 1)
         .maxMotion
-        .maxVelocity(4000)
-        .maxAcceleration(6000)
-        .allowedClosedLoopError(0.45);
-    config.smartCurrentLimit(currentLimit, freeLimit).voltageCompensation(12);
+        .maxAcceleration(maxAcceleration)
+        .maxVelocity(maxVelocity);
 
     tryUntilOk(
-        leader,
+        leaderSpark,
         5,
         () ->
-            leader.configure(
+            leaderSpark.configure(
                 config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
     tryUntilOk(
-        follower,
+        followerSpark,
         5,
         () ->
-            follower.configure(
-                config.follow(2, true),
+            followerSpark.configure(
+                config.follow(leader, true),
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters));
-    if (Robot.isReal()) return;
-
-    leaderSim = new SparkMaxSim(leader, DCMotor.getNEO(1));
-    followerSim = new SparkMaxSim(follower, DCMotor.getNEO(1));
-
-    motorSims = List.of(leaderSim, followerSim);
-
-    elevatorSim =
-        new ElevatorSim(DCMotor.getNEO(2), elevatorGearing, 5.4, 0.11176, 0, 1.01, true, 0);
-    elevatorSim.update(0);
   }
 
   @Override
-  public void setPower(double power) {
-    setVoltage(power * 12);
-  }
-
-  @Override
-  public void setVoltage(double volts) {
-    leader.setVoltage(volts);
-  }
-
-  @Override
-  public void setPosition(double currentTarget) {
-    target = currentTarget;
-    elevatorClosedLoopController.setReference(currentTarget, ControlType.kMAXMotionPositionControl);
-  }
-
-  @Override
-  public void update(ElevatorIOInputs inputs) {
+  public void updateInputs(ElevatorIOInputs inputs) {
     sparkStickyFault = false;
-    inputs.leaderConnected = leaderConnectedDebounce.calculate(!sparkStickyFault);
-    inputs.followerConnected = followerConnectedDebounce.calculate(!sparkStickyFault);
-    inputs.leaderTemp = leader.getMotorTemperature();
-    inputs.followerTemp = follower.getMotorTemperature();
-    inputs.positionRadsSec = position;
-    inputs.velocity = velocity;
-    inputs.target = target;
-    inputs.bottomLimit = false;
+
+    inputs.elevatorControlType = elevatorController.getControlType();
+
+    inputs.leaderPositionRads =
+        ifOkOrDefault(leaderSpark, leaderEncoder::getPosition, inputs.leaderPositionRads);
+    inputs.leaderVelocityRadsPerSec =
+        ifOkOrDefault(leaderSpark, leaderEncoder::getVelocity, inputs.leaderVelocityRadsPerSec);
+    inputs.leaderAppliedVolts =
+        ifOkOrDefault(
+            leaderSpark,
+            new DoubleSupplier[] {leaderSpark::getBusVoltage, leaderSpark::getAppliedOutput},
+            x -> x[0] * x[1],
+            inputs.leaderAppliedVolts);
+    inputs.leaderCurrentAmps =
+        ifOkOrDefault(leaderSpark, leaderSpark::getOutputCurrent, inputs.leaderCurrentAmps);
+    inputs.leaderTempCelsius =
+        ifOkOrDefault(leaderSpark, leaderSpark::getMotorTemperature, inputs.leaderTempCelsius);
+
+    inputs.followerPositionRads =
+        ifOkOrDefault(followerSpark, followerEncoder::getPosition, inputs.followerPositionRads);
+    inputs.followerVelocityRadsPerSec =
+        ifOkOrDefault(
+            followerSpark, followerEncoder::getVelocity, inputs.followerVelocityRadsPerSec);
+    inputs.followerAppliedVolts =
+        ifOkOrDefault(
+            followerSpark,
+            new DoubleSupplier[] {followerSpark::getBusVoltage, followerSpark::getAppliedOutput},
+            x -> x[0] * x[1],
+            inputs.followerAppliedVolts);
+    inputs.followerCurrentAmps =
+        ifOkOrDefault(followerSpark, followerSpark::getOutputCurrent, inputs.followerCurrentAmps);
+    inputs.followerTempCelsius =
+        ifOkOrDefault(
+            followerSpark, followerSpark::getMotorTemperature, inputs.followerTempCelsius);
   }
 
   @Override
-  public void simulationPeriodic() {
-    elevatorSim.setInputVoltage(
-        (leaderSim.getAppliedOutput() + followerSim.getAppliedOutput()) * 12);
-    elevatorSim.update(Constants.loopPeriodSecs);
+  public void runOpenLoop(double output) {
+    leaderSpark.set(output);
+  }
 
-    motorSims.forEach(
-        motorSim -> {
-          motorSim.setPosition(elevatorSim.getPositionMeters() * elevatorGearing / 2.0);
-          motorSim.setVelocity(elevatorSim.getVelocityMetersPerSecond() * elevatorGearing / 2.0);
-          motorSim.setMotorCurrent(elevatorSim.getCurrentDrawAmps() / 2.0);
-        });
+  @Override
+  public void runVolts(double volts) {
+    leaderSpark.setVoltage(volts);
   }
 
   @Override
   public void stop() {
-    leader.stopMotor();
+    leaderSpark.stopMotor();
+    followerSpark.stopMotor();
   }
 
   @Override
-  public void zero() {
-    leaderEncoder.setPosition(0);
+  public void setPosition(double position) {
+    elevatorController.setTrackedReference(position, ControlType.kMAXMotionPositionControl);
   }
 
   @Override
-  public void brakeMode(boolean enabled) {
-    motors.forEach(
-        motor ->
-            tryUntilOk(
-                motor,
-                5,
-                () ->
-                    motor.configure(
-                        config.idleMode(enabled ? IdleMode.kBrake : IdleMode.kCoast),
-                        ResetMode.kResetSafeParameters,
-                        PersistMode.kPersistParameters)));
+  public void setBrakeMode(boolean enabled) {
+    if (brakeModeEnabled == enabled) return;
+    new Thread(
+            () -> {
+              tryUntilOk(
+                  leaderSpark,
+                  5,
+                  () ->
+                      leaderSpark.configure(
+                          config.idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast),
+                          ResetMode.kResetSafeParameters,
+                          PersistMode.kPersistParameters));
+              tryUntilOk(
+                  followerSpark,
+                  5,
+                  () ->
+                      followerSpark.configure(
+                          config.idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast),
+                          ResetMode.kResetSafeParameters,
+                          PersistMode.kPersistParameters));
+            })
+        .start();
   }
 }

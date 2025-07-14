@@ -4,179 +4,211 @@
 
 package frc.robot.subsystems.intake;
 
+import static frc.robot.canID.intakeID.*;
 import static frc.robot.util.SparkUtil.*;
 
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.sim.SparkMaxSim;
-import com.revrobotics.spark.SparkBase;
+import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.simulation.FlywheelSim;
-import frc.robot.Constants;
-import java.util.List;
+import frc.robot.util.TrackedController;
+import java.util.function.DoubleSupplier;
 
-/** Add your docs here. */
-// the goal of this is to have the ability to control the motors individualy
+/**
+ * 6328 does a cool level of abstraction with their rollers where they dont specify a canID so they
+ * can use the same code over again, but our robot is so simple thats so unnecessary, they also use
+ * SparkBase and then check if its a sparkflex or sparkmax, but we only have sparkmax. The goal here
+ * is to just simplify the intake with the ability to specify the velocity, the voltage, etc.
+ * Specifically because the code i did during season was mad ugly. Maybe i should also code a
+ * talonFX one incase we change to krakens
+ */
 public class IntakeIOSpark implements IntakeIO {
-  private final double gearing = 5 / 1;
-  private final double wheelDiameterMeters = Units.inchesToMeters(2);
-  private final double wheelCircumference = Math.PI * wheelDiameterMeters;
+  private final SparkMax leftSpark;
+  private final RelativeEncoder leftEncoder;
+  private final TrackedController leftController;
 
-  private final double MOI = 0.2;
-  private final double Kv = 473;
-  private int currentLimit = 30;
+  private final SparkMax rightSpark;
+  private final RelativeEncoder rightEncoder;
+  private final TrackedController rightController;
+
+  private final SparkMaxConfig config;
+
+  private double maxAcceleration = 10000;
+  private double maxVelocity = 4000;
+  private double Kv = 473;
+  private int currentLimit = 50;
   private int freeLimit = 40;
   private boolean brakeModeEnabled = true;
 
-  private final SparkMax left, right;
-  private final RelativeEncoder leftEncoder, rightEncoder;
-  private final SparkClosedLoopController leftController, rightController;
-  private final List<SparkMax> motors;
-  private final SparkMaxConfig config;
-
-  private final Debouncer leftConnectedDebounce = new Debouncer(0.5);
-  private final Debouncer rightConnectedDebounce = new Debouncer(0.5);
-
-  private SparkMaxSim leftSim, rightSim;
-  private List<SparkMaxSim> motorSims;
-  private FlywheelSim leftIntakeSim, rightIntakeSim;
-  private List<FlywheelSim> intakeSims;
-
   public IntakeIOSpark() {
-    left = new SparkMax(4, MotorType.kBrushless);
-    right = new SparkMax(5, MotorType.kBrushless);
-    leftController = left.getClosedLoopController();
-    rightController = right.getClosedLoopController();
-    motors = List.of(left, right);
-    leftEncoder = left.getEncoder();
-    rightEncoder = right.getEncoder();
+    leftSpark = new SparkMax(left, MotorType.kBrushless);
+    leftEncoder = leftSpark.getEncoder();
+    leftController = new TrackedController(leftSpark.getClosedLoopController());
+
+    rightSpark = new SparkMax(right, MotorType.kBrushless);
+    rightEncoder = rightSpark.getEncoder();
+    rightController = new TrackedController(rightSpark.getClosedLoopController());
 
     config = new SparkMaxConfig();
-
-    
     config
-        .idleMode(brakeModeEnabled ? SparkBaseConfig.IdleMode.kBrake : SparkBaseConfig.IdleMode.kCoast)
+        .idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast)
         .smartCurrentLimit(currentLimit, freeLimit)
-        .voltageCompensation(12.0)
+        .voltageCompensation(12.0);
+    config.encoder.uvwMeasurementPeriod(10).uvwAverageDepth(2);
+    config
+        .signals
+        .primaryEncoderPositionAlwaysOn(true)
+        .primaryEncoderPositionPeriodMs(20)
+        .primaryEncoderVelocityAlwaysOn(true)
+        .primaryEncoderVelocityPeriodMs(20)
+        .appliedOutputPeriodMs(20)
+        .busVoltagePeriodMs(20)
+        .outputCurrentPeriodMs(20);
+    config
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .p(0.1)
-        .velocityFF(1/Kv)
         .maxMotion
-        .maxAcceleration(4000)
-        .maxVelocity(4000);
+        .maxAcceleration(maxAcceleration)
+        .maxVelocity(maxVelocity);
 
     tryUntilOk(
-        left,
+        leftSpark,
         5,
         () ->
-            left.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
-    tryUntilOk(
-        right,
-        5,
-        () ->
-            right.configure(
+            leftSpark.configure(
                 config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
-    tryUntilOk(left, 5, () -> leftEncoder.setPosition(0));
-    tryUntilOk(right, 5, () -> rightEncoder.setPosition(0));
-
-    if (RobotBase.isReal()) return;
-
-    leftSim = new SparkMaxSim(left, DCMotor.getNEO(1));
-    rightSim = new SparkMaxSim(right, DCMotor.getNEO(1));
-
-    leftIntakeSim =
-        new FlywheelSim(
-            LinearSystemId.createFlywheelSystem(DCMotor.getNEO(1), 3 * MOI, gearing),
-            DCMotor.getNEO(1));
-    rightIntakeSim =
-        new FlywheelSim(
-            LinearSystemId.createFlywheelSystem(DCMotor.getNEO(1), 3 * MOI, gearing),
-            DCMotor.getNEO(1));
-  }
-
-  // While I would love to group these together, they are not mechanically linked at all and they
-  // need to run seperately so they have to be completely seperate pieces of code
-  @Override
-  public void simulationPeriodic() {
-    leftIntakeSim.setInputVoltage(leftSim.getAppliedOutput() * 12);
-    rightIntakeSim.setInputVoltage(rightSim.getAppliedOutput() * 12);
-
-    leftIntakeSim.update(Constants.loopPeriodSecs);
-    rightIntakeSim.update(Constants.loopPeriodSecs);
-
-    leftSim.setVelocity(leftIntakeSim.getAngularVelocityRPM());
-    leftSim.setMotorCurrent(leftIntakeSim.getCurrentDrawAmps());
-    rightSim.setVelocity(rightIntakeSim.getAngularVelocityRPM());
-    rightSim.setMotorCurrent(rightIntakeSim.getCurrentDrawAmps());
-  }
-
-
-  @Override
-  public void setPower(double leftPower, double rightPower) {
-    setVoltage(leftPower * 12, rightPower * 12);
+    tryUntilOk(
+        rightSpark,
+        5,
+        () ->
+            rightSpark.configure(
+                config.inverted(true),
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters));
   }
 
   @Override
-  public void setVoltage(double leftVolts, double rightVolts) {
-    left.setVoltage(leftVolts);
-    right.setVoltage(-rightVolts);
+  public void updateInputs(IntakeIOInputs inputs) {
+    sparkStickyFault = false;
+
+    inputs.leftConnected = !sparkStickyFault;
+    inputs.leftPositionRads =
+        ifOkOrDefault(leftSpark, leftEncoder::getPosition, inputs.leftPositionRads);
+    inputs.leftVelocityRadPerSec =
+        ifOkOrDefault(leftSpark, leftEncoder::getVelocity, inputs.leftVelocityRadPerSec);
+    inputs.leftAppliedVolts =
+        ifOkOrDefault(
+            leftSpark,
+            new DoubleSupplier[] {leftSpark::getBusVoltage, leftSpark::getAppliedOutput},
+            x -> x[0] * x[1],
+            inputs.leftAppliedVolts);
+    inputs.leftCurrentAmps =
+        ifOkOrDefault(leftSpark, leftSpark::getOutputCurrent, inputs.leftCurrentAmps);
+    inputs.leftTempCelsius =
+        ifOkOrDefault(leftSpark, leftSpark::getMotorTemperature, inputs.leftTempCelsius);
+    inputs.leftControlType = leftController.getControlType();
+
+    inputs.rightConnected = !sparkStickyFault;
+    inputs.rightPositionRads =
+        ifOkOrDefault(rightSpark, rightEncoder::getPosition, inputs.rightPositionRads);
+    inputs.rightVelocityRadPerSec =
+        ifOkOrDefault(rightSpark, rightEncoder::getVelocity, inputs.rightVelocityRadPerSec);
+    inputs.rightAppliedVolts =
+        ifOkOrDefault(
+            rightSpark,
+            new DoubleSupplier[] {rightSpark::getBusVoltage, rightSpark::getAppliedOutput},
+            x -> x[0] * x[1],
+            inputs.rightAppliedVolts);
+    inputs.rightCurrentAmps =
+        ifOkOrDefault(rightSpark, rightSpark::getOutputCurrent, inputs.rightCurrentAmps);
+    inputs.rightTempCelsius =
+        ifOkOrDefault(rightSpark, rightSpark::getMotorTemperature, inputs.rightTempCelsius);
+    inputs.rightControlType = rightController.getControlType();
   }
 
   @Override
-  public void setVelocity(
-      double leftVelTarget,
-      SparkBase.ControlType leftControlType,
-      double rightVelTarget,
-      SparkBase.ControlType rightControlType) {
-    leftController.setReference(leftVelTarget, leftControlType);
-    rightController.setReference(rightVelTarget, rightControlType);
+  public void runOpenLoop(double output) {
+    leftSpark.set(output);
+    rightSpark.set(output);
+  }
+
+  @Override
+  public void runVolts(double volts) {
+    leftSpark.setVoltage(volts);
+    rightSpark.setVoltage(volts);
+  }
+
+  @Override
+  public void runSeperateVolts(double leftVolts, double rightVolts) {
+    leftSpark.setVoltage(leftVolts);
+    rightSpark.setVoltage(rightVolts);
   }
 
   @Override
   public void stop() {
-    motors.forEach(motor -> motor.stopMotor());
+    leftSpark.stopMotor();
+    rightSpark.stopMotor();
   }
 
   @Override
-  public void update(IntakeIOInputs inputs) {
-    sparkStickyFault = false;
-    inputs.leftConnected = leftConnectedDebounce.calculate(!sparkStickyFault);
-    inputs.rightConnected = rightConnectedDebounce.calculate(!sparkStickyFault);
-    inputs.leftTemp = left.getMotorTemperature();
-    inputs.rightTemp = right.getMotorTemperature();
-    inputs.leftVelocityRPM = (leftEncoder.getVelocity() * wheelCircumference) / (gearing);
-    inputs.rightVelocityRPM = (rightEncoder.getVelocity() * wheelCircumference) / (gearing);
+  public void runVelocity(double velocity) {
+    leftController.setTrackedReference(velocity, ControlType.kVelocity);
+    rightController.setTrackedReference(velocity, ControlType.kVelocity);
   }
 
   @Override
-  public void brakeMode(boolean enabled) {
+  public void runVelocityMAXMotion(double velocity) {
+    leftController.setTrackedReference(velocity, ControlType.kMAXMotionVelocityControl);
+    rightController.setTrackedReference(velocity, ControlType.kMAXMotionVelocityControl);
+  }
+
+  @Override
+  public void setPIDV(double kP, double kI, double kD, double vF) {
+    config.closedLoop.p(kP).i(kI).d(kD).velocityFF(vF);
+
+    tryUntilOk(
+        leftSpark,
+        5,
+        () ->
+            leftSpark.configure(
+                config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
+    tryUntilOk(
+        rightSpark,
+        5,
+        () ->
+            rightSpark.configure(
+                config.inverted(true),
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters));
+  }
+
+  @Override
+  public void setBrakeMode(boolean enabled) {
     if (brakeModeEnabled == enabled) return;
-    brakeModeEnabled = enabled;
     new Thread(
-      () ->
-      motors.forEach(
-          motor ->
+            () -> {
               tryUntilOk(
-                  motor,
+                  leftSpark,
                   5,
                   () ->
-                      motor.configure(
+                      leftSpark.configure(
                           config.idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast),
                           ResetMode.kResetSafeParameters,
-                          PersistMode.kPersistParameters))))
-        .start(); 
+                          PersistMode.kPersistParameters));
+              tryUntilOk(
+                  rightSpark,
+                  5,
+                  () ->
+                      rightSpark.configure(
+                          config.idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast),
+                          ResetMode.kResetSafeParameters,
+                          PersistMode.kPersistParameters));
+            })
+        .start();
   }
 }

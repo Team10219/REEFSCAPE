@@ -16,13 +16,11 @@ package frc.robot;
 import static edu.wpi.first.units.Units.*;
 import static frc.robot.subsystems.vision.VisionConstants.*;
 
-import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants.RobotType;
 import frc.robot.commands.AutoAlignCommand;
 import frc.robot.commands.DriveCommands;
@@ -33,39 +31,31 @@ import frc.robot.oi.OperatorControls;
 import frc.robot.oi.OperatorControlsXbox;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.elevator.Elevator;
-import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSim;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeIOSpark;
 import frc.robot.subsystems.vision.*;
+import frc.robot.util.AutoChooser;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
-/**
- * This class is where the bulk of the robot should be declared. Since Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
- * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
- * subsystems, commands, and button mappings) should be declared here.
- */
 public class RobotContainer {
   // Subsystems
   private Drive drive;
-  private Vision vision;
   private Elevator elevator;
   private Intake intake;
+  private Vision vision;
 
   private DriverControls driver;
   private OperatorControls operator;
 
   private SwerveDriveSimulation driveSimulation = null;
 
-  // Dashboard inputs
-  private final LoggedDashboardChooser<Command> autoChooser;
+  private final AutoChooser autoChooser;
 
-  /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public static RobotContainer instance;
 
   @SuppressWarnings("unused")
@@ -82,12 +72,11 @@ public class RobotContainer {
                   new ModuleIOTalonFXReal(TunerConstants.BackLeft),
                   new ModuleIOTalonFXReal(TunerConstants.BackRight),
                   (pose) -> {});
+          elevator = new Elevator(new ElevatorIOSpark());
+          intake = new Intake(new IntakeIOSpark());
           this.vision =
               new Vision(
                   drive, new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation));
-          elevator = new Elevator(new ElevatorIOSpark());
-          intake = new Intake(new IntakeIOSpark());
-
           break;
         case SIMBOT:
           // Sim robot, instantiate physics sim IO implementations
@@ -104,13 +93,13 @@ public class RobotContainer {
                   new ModuleIOTalonFXSim(TunerConstants.BackLeft, driveSimulation.getModules()[2]),
                   new ModuleIOTalonFXSim(TunerConstants.BackRight, driveSimulation.getModules()[3]),
                   driveSimulation::setSimulationWorldPose);
+          //elevator = new Elevator(new ElevatorIOSim()); 
+          //intake = new Intake(new IntakeIOSim(null, angularStdDevMegatag2Factor, angularStdDevBaseline))
           vision =
               new Vision(
                   drive,
                   new VisionIOPhotonVisionSim(
                       camera0Name, robotToCamera0, driveSimulation::getSimulatedDriveTrainPose));
-          elevator = new Elevator(new ElevatorIOSim());
-          // intake = new Intake(new IntakeIOSim());
           break;
       }
     }
@@ -129,30 +118,8 @@ public class RobotContainer {
     if (vision == null) {
       vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
     }
-    if (elevator == null) {
-      elevator = new Elevator(new ElevatorIO() {});
-    }
-
     // Set up auto routines
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
-
-    // Set up SysId routines
-    if (Constants.tuningMode == true) {
-      autoChooser.addOption(
-          "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
-      autoChooser.addOption(
-          "Drive Simple FF Characterization", DriveCommands.feedforwardCharacterization(drive));
-      autoChooser.addOption(
-          "Drive SysId (Quasistatic Forward)",
-          drive.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
-      autoChooser.addOption(
-          "Drive SysId (Quasistatic Reverse)",
-          drive.sysIdQuasistatic(SysIdRoutine.Direction.kReverse));
-      autoChooser.addOption(
-          "Drive SysId (Dynamic Forward)", drive.sysIdDynamic(SysIdRoutine.Direction.kForward));
-      autoChooser.addOption(
-          "Drive SysId (Dynamic Reverse)", drive.sysIdDynamic(SysIdRoutine.Direction.kReverse));
-    }
+    autoChooser = new AutoChooser(drive);
 
     configureControllers();
     configureButtonBindings();
@@ -197,17 +164,12 @@ public class RobotContainer {
                     new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
     driver.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-    driver.autoAlign(false).onTrue(new AutoAlignCommand(false, drive));
-
-    operator.Level1().onTrue(elevator.setPosition(elevator.Level1.getAsDouble()));
-
-    operator.Intake().whileTrue(intake.setVeloctiy(1, 1));
 
     DriverStation.silenceJoystickConnectionWarning(true);
   }
 
   public Command getAutonomousCommand() {
-    return autoChooser.get();
+    return autoChooser.getSelected();
   }
 
   public void resetSimulationField() {

@@ -4,38 +4,44 @@
 
 package frc.robot.subsystems.intake;
 
-import com.revrobotics.spark.SparkBase;
+import com.revrobotics.spark.SparkBase.ControlType;
 import org.littletonrobotics.junction.AutoLog;
 
-/** Add your docs here. */
 public interface IntakeIO {
   @AutoLog
   public static class IntakeIOInputs {
-    boolean leftConnected = false;
-    boolean rightConnected = false;
-    double leftTemp = 0.0;
-    double rightTemp = 0.0;
-    double leftVelocityRPM = 0.0;
-    double rightVelocityRPM = 0.0;
+    public boolean leftConnected = false;
+    public double leftPositionRads = 0.0;
+    public double leftVelocityRadPerSec = 0.0;
+    public double leftAppliedVolts = 0.0;
+    public double leftCurrentAmps = 0.0;
+    public double leftTempCelsius = 0.0;
+    public ControlType leftControlType = null;
+
+    public boolean rightConnected = false;
+    public double rightPositionRads = 0.0;
+    public double rightVelocityRadPerSec = 0.0;
+    public double rightAppliedVolts = 0.0;
+    public double rightCurrentAmps = 0.0;
+    public double rightTempCelsius = 0.0;
+    public ControlType rightControlType = null;
   }
 
-  public default void update(IntakeIOInputs inputs) {}
+  default void updateInputs(IntakeIOInputs inputs) {}
 
-  public default void setVelocity(
-      double leftVel,
-      SparkBase.ControlType controlTypeLeft,
-      double rightVel,
-      SparkBase.ControlType controlTypeRight) {}
+  default void runOpenLoop(double output) {}
 
-  public default void setControlType(SparkBase.ControlType left, SparkBase.ControlType right) {}
+  default void runVolts(double volts) {}
 
-  public default void setPower(double leftPower, double rightPower) {}
+  default void runSeperateVolts(double leftVolts, double rightVolts) {}
 
-  public default void setVoltage(double leftVolts, double rightVolts) {}
+  default void stop() {}
 
-  public default void stop() {}
+  default void runVelocity(double velocity) {}
 
-  public default void brakeMode(boolean enabled) {}
+  default void runVelocityMAXMotion(double velocity) {}
 
-  public default void simulationPeriodic() {}
+  default void setPIDV(double kP, double kI, double kD, double vF) {}
+
+  default void setBrakeMode(boolean enabled) {}
 }

@@ -4,35 +4,40 @@
 
 package frc.robot.subsystems.elevator;
 
+import com.revrobotics.spark.SparkBase.ControlType;
 import org.littletonrobotics.junction.AutoLog;
 
 /** Add your docs here. */
 public interface ElevatorIO {
+
   @AutoLog
   public static class ElevatorIOInputs {
-    boolean leaderConnected = false;
-    boolean followerConnected = false;
-    double leaderTemp = 0.0;
-    double followerTemp = 0.0;
-    double positionRadsSec = 0.0;
-    double velocity = 0.0;
-    double target = 0.0;
-    boolean bottomLimit = false;
+    public ControlType elevatorControlType = null;
+
+    public boolean leaderConnected = false;
+    public double leaderPositionRads = 0.0;
+    public double leaderVelocityRadsPerSec = 0.0;
+    public double leaderAppliedVolts = 0.0;
+    public double leaderCurrentAmps = 0.0;
+    public double leaderTempCelsius = 0.0;
+
+    public boolean followerConnected = false;
+    public double followerPositionRads = 0.0;
+    public double followerVelocityRadsPerSec = 0.0;
+    public double followerAppliedVolts = 0.0;
+    public double followerCurrentAmps = 0.0;
+    public double followerTempCelsius = 0.0;
   }
 
-  public default void update(ElevatorIOInputs inputs) {}
+  default void updateInputs(ElevatorIOInputs inputs) {}
 
-  public default void setPower(double power) {}
+  default void runOpenLoop(double output) {}
 
-  public default void setVoltage(double voltage) {}
+  default void runVolts(double volts) {}
 
-  public default void setPosition(double encoderValue) {}
+  default void stop() {}
 
-  public default void stop() {}
+  default void setPosition(double position) {}
 
-  public default void zero() {}
-
-  public default void brakeMode(boolean enabled) {}
-
-  public default void simulationPeriodic() {}
+  default void setBrakeMode(boolean enabled) {}
 }

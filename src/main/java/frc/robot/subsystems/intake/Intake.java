@@ -4,18 +4,23 @@
 
 package frc.robot.subsystems.intake;
 
-
-import static com.revrobotics.spark.SparkBase.ControlType.*;
-import com.revrobotics.spark.SparkBase.ControlType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
+/**
+ * Our intake is two motors, not mechanically connected in any way, they run completely individually
+ * of eachother
+ */
 public class Intake extends SubsystemBase {
-  /** Creates a new Intake. */
-  private final IntakeIO io;
+  private static final LoggedTunableNumber kP = new LoggedTunableNumber("Intake/kP", 0.1);
+  private static final LoggedTunableNumber kI = new LoggedTunableNumber("Intake/kI", 0.0);
+  private static final LoggedTunableNumber kD = new LoggedTunableNumber("Intake/kD", 0.0);
+  private static final LoggedTunableNumber vF = new LoggedTunableNumber("Intake/vF", 0.0);
 
+  private final IntakeIO io;
   private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
   public Intake(IntakeIO io) {
@@ -24,35 +29,31 @@ public class Intake extends SubsystemBase {
 
   @Override
   public void periodic() {
-    io.update(inputs);
+    io.updateInputs(inputs);
     Logger.processInputs("Intake", inputs);
   }
 
-  @Override
-  public void simulationPeriodic() {
-    io.simulationPeriodic();
+  public Command runOpenLoop(double output) {
+    return Commands.runEnd(() -> io.runOpenLoop(output), () -> io.stop());
   }
 
-  public Command setVeloctiy(double leftVel, double rightVel) {
-    return Commands.runEnd(
-        () ->
-            io.setVelocity(
-                leftVel,
-                ControlType.kMAXMotionVelocityControl,
-                rightVel,
-                ControlType.kMAXMotionVelocityControl),
-        () -> io.stop());
+  public Command runVolts(double volts) {
+    return Commands.runEnd(() -> io.runVolts(volts), () -> io.stop());
   }
 
-  public Command setPower(double leftPower, double rightPower) {
-    return Commands.runEnd(() -> io.setPower(leftPower, rightPower), () -> io.stop());
+  public Command runSeperateVolts(double leftVolts, double rightVolts) {
+    return Commands.runEnd(() -> io.runSeperateVolts(leftVolts, rightVolts), () -> io.stop());
   }
 
-  public Command setVoltage(double leftVolts, double rightVolts) {
-    return Commands.runEnd(() -> io.setVoltage(leftVolts, rightVolts), () -> io.stop());
+  public Command runVelocity(double velocity) {
+    return Commands.sequence(
+        Commands.runOnce(() -> io.setPIDV(kP.get(), kI.get(), kD.get(), vF.get())),
+        Commands.runEnd(() -> io.runVelocity(velocity), () -> io.stop()));
   }
 
-  public Command Intake() {
-    return Commands.runEnd(() -> io.setVelocity(0, kMAXMotionVelocityControl, 0, kMAXMotionVelocityControl), () -> io.stop());
+  public Command runVelocityMAXMotion(double velocity) {
+    return Commands.sequence(
+        Commands.runOnce(() -> io.setPIDV(kP.get(), kI.get(), kD.get(), vF.get())),
+        Commands.runEnd(() -> io.runVelocityMAXMotion(velocity), () -> io.stop()));
   }
 }
