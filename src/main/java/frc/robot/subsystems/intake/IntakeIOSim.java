@@ -4,145 +4,86 @@
 
 package frc.robot.subsystems.intake;
 
-import com.revrobotics.spark.SparkBase.ControlType;
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
+import static frc.robot.canID.intakeID.*;
+import static frc.robot.util.SparkUtil.tryUntilOk;
+
+import com.revrobotics.sim.SparkMaxSim;
+import com.revrobotics.sim.SparkRelativeEncoderSim;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
+import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.simulation.DCMotorSim;
+import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Constants;
 
-/** Literally just completely stolen from 6328, thanks! */
-public class IntakeIOSim implements IntakeIO {
+/** Add your docs here. */
+public class IntakeIOSim extends IntakeIOSpark {
 
-  private final DCMotorSim leftSim;
-  private final DCMotorSim rightSim;
-  private final DCMotor leftGearbox = DCMotor.getNEO(1);
-  private final DCMotor rightGearbox = DCMotor.getNEO(1);
+  private final SparkMaxSim leftSparkSim;
+  private final SparkRelativeEncoderSim leftEncoderSim;
+  private final DCMotor leftGearbox;
+  private final FlywheelSim leftRollerSim;
 
-  private boolean leftClosedLoop = false;
-  private boolean rightClosedLoop = false;
-  private PIDController leftController = new PIDController(0.1, 0, 0);
-  private PIDController rightController = new PIDController(0.1, 0, 0);
-  private ControlType leftControlType = null;
-  private ControlType rightControlType = null;
+  private final SparkMaxSim rightSparkSim;
+  private final SparkRelativeEncoderSim rightEncoderSim;
+  private final DCMotor rightGearbox;
+  private final FlywheelSim rightRollerSim;
 
-  private final double simKv = 1 / 473;
-  private final double simKs = 0.0;
+  private final double gearing = 5;
+  private final double moi = 0.00024;
 
-  private double gearing = 5 / 1;
-  private double MOI = 0.00024;
-
-  private double leftFFVolts = 0.0;
-  private double rightFFVolts = 0.0;
-  private double leftAppliedVolts = 0.0;
-  private double rightAppliedVolts = 0.0;
+  private SparkMaxConfig simConfig;
 
   public IntakeIOSim() {
-    leftSim =
-        new DCMotorSim(LinearSystemId.createDCMotorSystem(leftGearbox, MOI, gearing), leftGearbox);
-    rightSim =
-        new DCMotorSim(
-            LinearSystemId.createDCMotorSystem(rightGearbox, MOI, gearing), rightGearbox);
+    super();
+
+    simConfig = new SparkMaxConfig();
+    simConfig.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder).p(0.1).i(0.0).d(0.0);
+
+    leftSparkSim = new SparkMaxSim(leftSpark, DCMotor.getNEO(1));
+    leftEncoderSim = leftSparkSim.getRelativeEncoderSim();
+    leftGearbox = DCMotor.getNEO(1);
+    leftRollerSim =
+        new FlywheelSim(
+            LinearSystemId.createFlywheelSystem(leftGearbox, moi, gearing), leftGearbox);
+
+    rightSparkSim = new SparkMaxSim(rightSpark, DCMotor.getNEO(1));
+    rightEncoderSim = rightSparkSim.getRelativeEncoderSim();
+    rightGearbox = DCMotor.getNEO(1);
+    rightRollerSim =
+        new FlywheelSim(
+            LinearSystemId.createFlywheelSystem(rightGearbox, moi, gearing), rightGearbox);
+
+    tryUntilOk(
+        leftSpark,
+        5,
+        () ->
+            leftSpark.configure(
+                simConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
+    tryUntilOk(
+        rightSpark,
+        5,
+        () ->
+            rightSpark.configure(
+                simConfig.follow(left, true),
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters));
   }
 
   @Override
   public void updateInputs(IntakeIOInputs inputs) {
+    leftRollerSim.setInputVoltage(leftSpark.getBusVoltage() * leftSpark.getAppliedOutput());
+    leftRollerSim.update(Constants.loopPeriodSecs);
+    leftSparkSim.iterate(
+        leftRollerSim.getAngularVelocityRadPerSec(), 12.0, Constants.loopPeriodSecs);
 
-    if (leftClosedLoop) {
-      leftAppliedVolts = leftController.calculate(leftSim.getAngularVelocityRadPerSec());
-    } else {
-      leftController.reset();
-    }
-    if (rightClosedLoop) {
-      rightAppliedVolts = rightController.calculate(rightSim.getAngularVelocityRadPerSec());
-    } else {
-      rightController.reset();
-    }
+    rightRollerSim.setInputVoltage(rightSpark.getBusVoltage() * rightSpark.getAppliedOutput());
+    rightRollerSim.update(Constants.loopPeriodSecs);
+    rightSparkSim.iterate(
+        rightRollerSim.getAngularVelocityRadPerSec(), 12.0, Constants.loopPeriodSecs);
 
-    if (DriverStation.isDisabled()) {
-      runVolts(0.0);
-    }
-
-    leftSim.setInputVoltage(MathUtil.clamp(leftAppliedVolts, -12.0, 12.0));
-    rightSim.setInputVoltage(MathUtil.clamp(rightAppliedVolts, -12.0, 12.0));
-    leftSim.update(Constants.loopPeriodSecs);
-    rightSim.update(Constants.loopPeriodSecs);
-
-    inputs.leftConnected = true;
-    inputs.leftPositionRads = leftSim.getAngularPositionRad();
-    inputs.leftVelocityRadPerSec = leftSim.getAngularVelocityRadPerSec();
-    inputs.leftAppliedVolts = leftAppliedVolts;
-    inputs.leftCurrentAmps = Math.abs(leftSim.getCurrentDrawAmps());
-    inputs.leftTempCelsius = 0.0;
-    inputs.leftControlType = leftControlType.toString();
-
-    inputs.rightConnected = true;
-    inputs.rightPositionRads = rightSim.getAngularPositionRad();
-    inputs.rightVelocityRadPerSec = rightSim.getAngularVelocityRadPerSec();
-    inputs.rightAppliedVolts = rightAppliedVolts;
-    inputs.rightCurrentAmps = Math.abs(rightSim.getCurrentDrawAmps());
-    inputs.rightTempCelsius = 0.0;
-    inputs.rightControlType = rightControlType.toString();
-  }
-
-  @Override
-  public void runOpenLoop(double output) {
-    leftClosedLoop = false;
-    rightClosedLoop = false;
-
-    leftAppliedVolts = output;
-    rightAppliedVolts = output;
-  }
-
-  @Override
-  public void runVolts(double volts) {
-    leftClosedLoop = false;
-    rightClosedLoop = false;
-
-    leftAppliedVolts = volts;
-    rightAppliedVolts = volts;
-  }
-
-  @Override
-  public void runSeparateVolts(double leftVolts, double rightVolts) {
-    leftClosedLoop = false;
-    rightClosedLoop = false;
-
-    leftAppliedVolts = leftVolts;
-    rightAppliedVolts = rightVolts;
-  }
-
-  @Override
-  public void runVelocity(double velocity) {
-    leftClosedLoop = true;
-    rightClosedLoop = true;
-
-    leftFFVolts = simKs * Math.signum(velocity) + simKv * velocity;
-    rightFFVolts = simKs * Math.signum(velocity) + simKv * velocity;
-
-    leftController.setSetpoint(velocity);
-    rightController.setSetpoint(velocity);
-  }
-
-  @Override
-  public void runVelocityMAXMotion(double velocity) {
-    leftClosedLoop = true;
-    rightClosedLoop = true;
-
-    leftControlType = ControlType.kMAXMotionVelocityControl;
-    rightControlType = ControlType.kMAXMotionVelocityControl;
-
-    leftFFVolts = simKs * Math.signum(velocity) + simKv * velocity;
-    rightFFVolts = simKs * Math.signum(velocity) + simKv * velocity;
-
-    leftController.setSetpoint(velocity);
-    rightController.setSetpoint(velocity);
-  }
-
-  @Override
-  public void stop() {
-    runVolts(0.0);
+    super.updateInputs(inputs);
   }
 }

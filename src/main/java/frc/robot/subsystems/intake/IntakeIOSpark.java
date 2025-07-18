@@ -29,11 +29,11 @@ import java.util.function.DoubleSupplier;
  * talonFX one incase we change to krakens
  */
 public class IntakeIOSpark implements IntakeIO {
-  private final SparkMax leftSpark;
+  protected final SparkMax leftSpark;
   private final RelativeEncoder leftEncoder;
   private final TrackedController leftController;
 
-  private final SparkMax rightSpark;
+  protected final SparkMax rightSpark;
   private final RelativeEncoder rightEncoder;
   private final TrackedController rightController;
 

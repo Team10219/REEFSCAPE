@@ -44,4 +44,9 @@ public class OperatorControlsXbox implements OperatorControls {
   public Trigger Intake() {
     return operator.leftTrigger();
   }
+
+  @Override
+  public Trigger Spit() {
+    return operator.rightTrigger();
+  }
 }

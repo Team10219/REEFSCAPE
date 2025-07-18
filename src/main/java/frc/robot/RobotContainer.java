@@ -154,6 +154,7 @@ public class RobotContainer {
     driver.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
     operator.Intake().onTrue(intake.runVelocityMAXMotion(400));
+    operator.Spit().whileTrue(intake.runVolts(12));
   }
 
   public Command getAutonomousCommand() {
