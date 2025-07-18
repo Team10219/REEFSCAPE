@@ -8,6 +8,7 @@ import static frc.robot.canID.intakeID.*;
 import static frc.robot.util.SparkUtil.*;
 
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
@@ -48,11 +49,11 @@ public class IntakeIOSpark implements IntakeIO {
   public IntakeIOSpark() {
     leftSpark = new SparkMax(left, MotorType.kBrushless);
     leftEncoder = leftSpark.getEncoder();
-    leftController = new TrackedController(leftSpark.getClosedLoopController());
+    leftController = new TrackedController(leftSpark.getClosedLoopController(), leftEncoder);
 
     rightSpark = new SparkMax(right, MotorType.kBrushless);
     rightEncoder = rightSpark.getEncoder();
-    rightController = new TrackedController(rightSpark.getClosedLoopController());
+    rightController = new TrackedController(rightSpark.getClosedLoopController(), rightEncoder);
 
     config = new SparkMaxConfig();
     config
@@ -72,6 +73,12 @@ public class IntakeIOSpark implements IntakeIO {
     config
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .p(0)
+        .i(0)
+        .d(0)
+        .p(0, ClosedLoopSlot.kSlot1)
+        .i(0, ClosedLoopSlot.kSlot1)
+        .d(0, ClosedLoopSlot.kSlot1)
         .maxMotion
         .maxAcceleration(maxAcceleration)
         .maxVelocity(maxVelocity);
@@ -157,14 +164,16 @@ public class IntakeIOSpark implements IntakeIO {
 
   @Override
   public void runVelocity(double velocity) {
-    leftController.setTrackedReference(velocity, ControlType.kVelocity);
-    rightController.setTrackedReference(velocity, ControlType.kVelocity);
+    leftController.setTrackedReference(velocity, ControlType.kVelocity, ClosedLoopSlot.kSlot0);
+    rightController.setTrackedReference(velocity, ControlType.kVelocity, ClosedLoopSlot.kSlot0);
   }
 
   @Override
   public void runVelocityMAXMotion(double velocity) {
-    leftController.setTrackedReference(velocity, ControlType.kMAXMotionVelocityControl);
-    rightController.setTrackedReference(velocity, ControlType.kMAXMotionVelocityControl);
+    leftController.setTrackedReference(
+        velocity, ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
+    rightController.setTrackedReference(
+        velocity, ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
   }
 
   @Override

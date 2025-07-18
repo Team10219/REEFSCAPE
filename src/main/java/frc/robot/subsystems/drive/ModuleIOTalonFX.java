@@ -25,15 +25,22 @@ import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants;
 import frc.robot.Constants.RobotType;
 import frc.robot.generated.TunerConstants;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public abstract class ModuleIOTalonFX implements ModuleIO {
   protected final SwerveModuleConstants<
           TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>
       constants;
 
+  protected final TalonFXConfiguration driveConfig;
+  protected final TalonFXConfiguration turnConfig;
+
   protected final TalonFX driveTalon;
   protected final TalonFX turnTalon;
   protected final CANcoder cancoder;
+
+  protected static final Executor brakeModeExecutor = Executors.newFixedThreadPool(8);
 
   protected final VoltageOut voltageRequest = new VoltageOut(0);
   protected final PositionVoltage positionVoltageRequest = new PositionVoltage(0.0);
@@ -73,7 +80,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     cancoder = new CANcoder(constants.EncoderId, TunerConstants.DrivetrainConstants.CANBusName);
 
     // Configure drive motor
-    var driveConfig = constants.DriveMotorInitialConfigs;
+    driveConfig = constants.DriveMotorInitialConfigs;
     driveConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     driveConfig.Slot0 = constants.DriveMotorGains;
     driveConfig.TorqueCurrent.PeakForwardTorqueCurrent = constants.SlipCurrent;
@@ -88,7 +95,7 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
     tryUntilOk(5, () -> driveTalon.setPosition(0.0, 0.25));
 
     // Configure turn motor
-    var turnConfig = new TalonFXConfiguration();
+    turnConfig = new TalonFXConfiguration();
     turnConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     turnConfig.Slot0 = constants.SteerMotorGains;
     if (Constants.getRobot() == RobotType.SIMBOT)
@@ -214,6 +221,26 @@ public abstract class ModuleIOTalonFX implements ModuleIO {
           case Voltage -> positionVoltageRequest.withPosition(rotation.getRotations());
           case TorqueCurrentFOC -> positionTorqueCurrentRequest.withPosition(
               rotation.getRotations());
+        });
+  }
+
+  @Override
+  public void setBrakeMode(boolean enabled) {
+    brakeModeExecutor.execute(
+        () -> {
+          synchronized (driveConfig) {
+            driveConfig.MotorOutput.NeutralMode =
+                enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+            tryUntilOk(5, () -> driveTalon.getConfigurator().apply(driveConfig, 0.25));
+          }
+        });
+    brakeModeExecutor.execute(
+        () -> {
+          synchronized (turnConfig) {
+            turnConfig.MotorOutput.NeutralMode =
+                enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+            tryUntilOk(5, () -> turnTalon.getConfigurator().apply(turnConfig, 0.25));
+          }
         });
   }
 }

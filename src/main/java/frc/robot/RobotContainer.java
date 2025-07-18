@@ -22,7 +22,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants.RobotType;
-import frc.robot.commands.AutoAlignCommand;
 import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.oi.DriverControls;
@@ -31,10 +30,8 @@ import frc.robot.oi.OperatorControls;
 import frc.robot.oi.OperatorControlsXbox;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.elevator.Elevator;
-import frc.robot.subsystems.elevator.ElevatorIOSim;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
 import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeIOSpark;
 import frc.robot.subsystems.vision.*;
 import frc.robot.util.AutoChooser;
@@ -60,6 +57,7 @@ public class RobotContainer {
 
   @SuppressWarnings("unused")
   public RobotContainer() {
+    DriverStation.silenceJoystickConnectionWarning(true);
     if (Constants.getMode() != Constants.Mode.REPLAY) {
       switch (Constants.getRobot()) {
         case COMPBOT:
@@ -93,8 +91,8 @@ public class RobotContainer {
                   new ModuleIOTalonFXSim(TunerConstants.BackLeft, driveSimulation.getModules()[2]),
                   new ModuleIOTalonFXSim(TunerConstants.BackRight, driveSimulation.getModules()[3]),
                   driveSimulation::setSimulationWorldPose);
-          //elevator = new Elevator(new ElevatorIOSim()); 
-          //intake = new Intake(new IntakeIOSim(null, angularStdDevMegatag2Factor, angularStdDevBaseline))
+          // elevator = new Elevator(new ElevatorIOSim());
+          // intake = new Intake(new IntakeIOSim(null, null, null))
           vision =
               new Vision(
                   drive,
@@ -130,48 +128,36 @@ public class RobotContainer {
     operator = new OperatorControlsXbox(1);
   }
 
-  @SuppressWarnings("static-access")
   private void configureButtonBindings() {
-    // Default command, normal field-relative drive
-    drive.setDefaultCommand(
+    drive.setDefaultCommand( // Default command, normal field-relative drive
         DriveCommands.joystickDrive(drive, driver::getForward, driver::getStrafe, driver::getTurn));
 
-    // Lock to 0° when A button is held
-    driver
+    driver // Lock to 0° when A button is held
         .lockToZero()
         .whileTrue(
             DriveCommands.joystickDriveAtAngle(
                 drive, driver::getForward, driver::getStrafe, () -> new Rotation2d()));
 
     driver
-        .reefFace()
-        .whileTrue(
-            DriveCommands.joystickDriveAtAngle(
-                drive,
-                driver::getForward,
-                driver::getStrafe,
-                () -> new Rotation2d().fromDegrees(60)));
+        .xWheels()
+        .onTrue(
+            Commands.runOnce(
+                drive::stopWithX, drive)); // Switch to X pattern when X button is pressed
 
-    // Switch to X pattern when X button is pressed
-    driver.xWheels().onTrue(Commands.runOnce(drive::stopWithX, drive));
-
-    // Reset gyro / odometry
-    final Runnable resetGyro =
+    final Runnable resetGyro = // Reset gyro / odometry
         Constants.getRobot() == RobotType.SIMBOT
             ? () -> drive.setPose(driveSimulation.getSimulatedDriveTrainPose())
             : () ->
                 drive.setPose(
                     new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
     driver.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
-
-
-    DriverStation.silenceJoystickConnectionWarning(true);
   }
 
   public Command getAutonomousCommand() {
     return autoChooser.getSelected();
   }
 
+  // All Sim
   public void resetSimulationField() {
     if (Constants.getRobot() != RobotType.SIMBOT) return;
 

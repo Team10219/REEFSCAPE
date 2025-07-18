@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems.intake;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -14,16 +15,16 @@ import frc.robot.Constants;
 public class IntakeIOSim implements IntakeIO {
   private final DCMotorSim leftSim;
   private final DCMotorSim rightSim;
-  private final DCMotor gearbox;
+  private final DCMotor leftGearbox = DCMotor.getNEO(1);
+  private final DCMotor rightGearbox = DCMotor.getNEO(1);
+
+  private double gearing = 5/1;
   private double leftAppliedVoltage = 0.0;
   private double rightAppliedVoltage = 0.0;
 
-  public IntakeIOSim(DCMotor motorModel, double reduction, double moi) {
-    gearbox = motorModel;
-    leftSim =
-        new DCMotorSim(LinearSystemId.createDCMotorSystem(motorModel, moi, reduction), motorModel);
-    rightSim =
-        new DCMotorSim(LinearSystemId.createDCMotorSystem(motorModel, moi, reduction), motorModel);
+  public IntakeIOSim() {
+    leftSim = new DCMotorSim(LinearSystemId.createDCMotorSystem(leftGearbox, 0, gearing), leftGearbox);
+    rightSim = new DCMotorSim(LinearSystemId.createDCMotorSystem(rightGearbox, 0, gearing), rightGearbox);
   }
 
   @Override
@@ -40,5 +41,31 @@ public class IntakeIOSim implements IntakeIO {
     inputs.leftVelocityRadPerSec = leftSim.getAngularVelocityRadPerSec();
     inputs.leftAppliedVolts = leftAppliedVoltage;
     inputs.leftCurrentAmps = leftSim.getCurrentDrawAmps();
+    inputs.leftTempCelsius = 0.0;
+
+    inputs.rightConnected = true;
+    inputs.rightPositionRads = rightSim.getAngularPositionRad();
+    inputs.rightVelocityRadPerSec = rightSim.getAngularVelocityRadPerSec();
+    inputs.rightAppliedVolts = rightAppliedVoltage;
+    inputs.rightCurrentAmps = rightSim.getCurrentDrawAmps();
+    inputs.rightTempCelsius = 0.0;
+  }
+
+  @Override
+  public void runVolts(double volts) {
+    leftAppliedVoltage = MathUtil.clamp(volts, -12.0, 12.0);
+    rightAppliedVoltage = MathUtil.clamp(volts, -12.0, 12.0);
+
+    leftSim.setInputVoltage(leftAppliedVoltage);
+    rightSim.setInputVoltage(rightAppliedVoltage);
+  }
+
+  @Override
+  public void runSeperateVolts(double leftVolts, double rightVolts) {
+    leftAppliedVoltage = MathUtil.clamp(leftVolts, -12.0, 12.0);
+    rightAppliedVoltage = MathUtil.clamp(rightVolts, -12.0, 12.0);
+
+    leftSim.setInputVoltage(leftAppliedVoltage);
+    rightSim.setInputVoltage(rightAppliedVoltage);
   }
 }

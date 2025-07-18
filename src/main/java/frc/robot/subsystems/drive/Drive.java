@@ -43,6 +43,7 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -51,9 +52,13 @@ import frc.robot.Constants.RobotType;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.util.LocalADStarAK;
+import frc.robot.util.LoggedTracer;
+import frc.robot.util.LoggedTunableNumber;
+import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import lombok.Setter;
 import org.ironmaple.simulation.drivesims.COTS;
 import org.ironmaple.simulation.drivesims.configs.DriveTrainSimulationConfig;
 import org.ironmaple.simulation.drivesims.configs.SwerveModuleSimulationConfig;
@@ -116,6 +121,13 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
   private final Alert gyroDisconnectedAlert =
       new Alert("Disconnected gyro, using kinematics as fallback.", AlertType.kError);
 
+  private static final LoggedTunableNumber coastWaitTime =
+      new LoggedTunableNumber("Drive/CoastWaitTimeSeconds", 0.5);
+  private static final LoggedTunableNumber coastMetersPerSecondThreshold =
+      new LoggedTunableNumber("Drive/CoastMetersPerSecondThreshold", .05);
+
+  private final Timer lastMovementTimer = new Timer();
+
   private final SwerveDriveKinematics kinematics =
       new SwerveDriveKinematics(getModuleTranslations());
   private Rotation2d rawGyroRotation = new Rotation2d();
@@ -131,6 +143,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
 
   private final Consumer<Pose2d> resetSimulationPoseCallBack;
 
+  @AutoLogOutput private boolean brakeModeEnabled = true;
+
   public Drive(
       GyroIO gyroIO,
       ModuleIO flModuleIO,
@@ -144,6 +158,8 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     modules[1] = new Module(frModuleIO, 1, TunerConstants.FrontRight);
     modules[2] = new Module(blModuleIO, 2, TunerConstants.BackLeft);
     modules[3] = new Module(brModuleIO, 3, TunerConstants.BackRight);
+    lastMovementTimer.start();
+    // setBrakeMode(true);
 
     // Usage reporting for swerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_AdvantageKit);
@@ -186,6 +202,14 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
                 (voltage) -> runCharacterization(voltage.in(Volts)), null, this));
   }
 
+  public enum CoastRequest {
+    AUTOMATIC,
+    ALWAYS_BRAKE,
+    ALWAYS_COAST
+  }
+
+  @Setter @AutoLogOutput private CoastRequest coastRequest = CoastRequest.ALWAYS_BRAKE;
+
   @Override
   public void periodic() {
     odometryLock.lock(); // Prevents odometry updates while reading data
@@ -195,6 +219,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       module.periodic();
     }
     odometryLock.unlock();
+    LoggedTracer.record("Drive/Inputs");
 
     // Stop moving when disabled
     if (DriverStation.isDisabled()) {
@@ -206,7 +231,7 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
     // Log empty setpoint states when disabled
     if (DriverStation.isDisabled()) {
       Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
-      Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
+      Logger.recordOutput("SwerveStates/SetpointsUnoptimized", new SwerveModuleState[] {});
     }
 
     // Update odometry
@@ -241,8 +266,44 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       poseEstimator.updateWithTime(sampleTimestamps[i], rawGyroRotation, modulePositions);
     }
 
+    if (Arrays.stream(modules)
+        .anyMatch(
+            (module) ->
+                Math.abs(module.getVelocityMetersPerSec()) > coastMetersPerSecondThreshold.get())) {
+      lastMovementTimer.reset();
+    }
+
+    if (DriverStation.isEnabled()) {
+      coastRequest = CoastRequest.ALWAYS_BRAKE;
+    }
+
+    switch (coastRequest) {
+      case AUTOMATIC -> {
+        if (DriverStation.isEnabled()) {
+          setBrakeMode(true);
+        } else if (lastMovementTimer.hasElapsed(coastWaitTime.get())) {
+          setBrakeMode(false);
+        }
+      }
+      case ALWAYS_BRAKE -> {
+        setBrakeMode(true);
+      }
+      case ALWAYS_COAST -> {
+        setBrakeMode(false);
+      }
+    }
+
     // Update gyro alert
     gyroDisconnectedAlert.set(!gyroInputs.connected && Constants.getRobot() != RobotType.SIMBOT);
+
+    LoggedTracer.record("Drive/Periodic");
+  }
+
+  private void setBrakeMode(boolean enabled) {
+    if (brakeModeEnabled != enabled) {
+      Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
+    }
+    brakeModeEnabled = enabled;
   }
 
   /**

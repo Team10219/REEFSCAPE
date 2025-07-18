@@ -20,14 +20,13 @@ import frc.robot.util.TrackedController;
 import java.util.function.DoubleSupplier;
 
 /**
- * follower always follows leader, for the commands i only run the leader and i set the config for
+ * follower always follows leader, for the commands I only run the leader and I set the config for
  * the follower to run inverted the leader
  */
 public class ElevatorIOSpark implements ElevatorIO {
   private final SparkMax leaderSpark;
   private final RelativeEncoder leaderEncoder;
   private final TrackedController elevatorController;
-
   private final SparkMax followerSpark;
   private final RelativeEncoder followerEncoder;
 
@@ -42,7 +41,9 @@ public class ElevatorIOSpark implements ElevatorIO {
   public ElevatorIOSpark() {
     leaderSpark = new SparkMax(leader, MotorType.kBrushless);
     leaderEncoder = leaderSpark.getEncoder();
-    elevatorController = new TrackedController(leaderSpark.getClosedLoopController());
+
+    elevatorController =
+        new TrackedController(leaderSpark.getClosedLoopController(), leaderEncoder);
 
     followerSpark = new SparkMax(follower, MotorType.kBrushless);
     followerEncoder = followerSpark.getEncoder();
@@ -65,6 +66,9 @@ public class ElevatorIOSpark implements ElevatorIO {
     config
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .p(1)
+        .i(0)
+        .d(0)
         .maxMotion
         .maxAcceleration(maxAcceleration)
         .maxVelocity(maxVelocity);
@@ -90,6 +94,7 @@ public class ElevatorIOSpark implements ElevatorIO {
     sparkStickyFault = false;
 
     inputs.elevatorControlType = elevatorController.getControlType();
+    inputs.atSetpoint = elevatorController.atSetpoint().getAsBoolean();
 
     inputs.leaderPositionRads =
         ifOkOrDefault(leaderSpark, leaderEncoder::getPosition, inputs.leaderPositionRads);

@@ -46,14 +46,10 @@ public class Intake extends SubsystemBase {
   }
 
   public Command runVelocity(double velocity) {
-    return Commands.sequence(
-        Commands.runOnce(() -> io.setPIDV(kP.get(), kI.get(), kD.get(), vF.get())),
-        Commands.runEnd(() -> io.runVelocity(velocity), () -> io.stop()));
+    return Commands.runEnd(() -> io.runVelocity(velocity), () -> io.stop());
   }
 
   public Command runVelocityMAXMotion(double velocity) {
-    return Commands.sequence(
-        Commands.runOnce(() -> io.setPIDV(kP.get(), kI.get(), kD.get(), vF.get())),
-        Commands.runEnd(() -> io.runVelocityMAXMotion(velocity), () -> io.stop()));
+    return Commands.runEnd(() -> io.runVelocityMAXMotion(velocity), () -> io.stop());
   }
 }

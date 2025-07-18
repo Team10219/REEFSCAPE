@@ -13,6 +13,7 @@ public interface ElevatorIO {
   @AutoLog
   public static class ElevatorIOInputs {
     public ControlType elevatorControlType = null;
+    public boolean atSetpoint = false;
 
     public boolean leaderConnected = false;
     public double leaderPositionRads = 0.0;

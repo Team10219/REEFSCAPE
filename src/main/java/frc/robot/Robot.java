@@ -89,6 +89,8 @@ public class Robot extends LoggedRobot {
         Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
         break;
     }
+    // Start URCL
+    Logger.registerURCL(URCL.startExternal(canIdAliases));
 
     // Start AdvantageKit logger
     Logger.start();
@@ -119,7 +121,6 @@ public class Robot extends LoggedRobot {
   @Override
   public void robotInit() {
     FollowPathCommand.warmupCommand().schedule();
-    Logger.registerURCL(URCL.startExternal(canIdAliases));
   }
 
   /** This function is called periodically during all modes. */
