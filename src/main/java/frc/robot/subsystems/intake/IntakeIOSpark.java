@@ -37,7 +37,7 @@ public class IntakeIOSpark implements IntakeIO {
   private final RelativeEncoder rightEncoder;
   private final TrackedController rightController;
 
-  private final SparkMaxConfig config;
+  private SparkMaxConfig config;
 
   private double maxAcceleration = 10000;
   private double maxVelocity = 4000;
@@ -49,11 +49,11 @@ public class IntakeIOSpark implements IntakeIO {
   public IntakeIOSpark() {
     leftSpark = new SparkMax(left, MotorType.kBrushless);
     leftEncoder = leftSpark.getEncoder();
-    leftController = new TrackedController(leftSpark.getClosedLoopController(), leftEncoder);
+    leftController = new TrackedController(leftSpark.getClosedLoopController());
 
     rightSpark = new SparkMax(right, MotorType.kBrushless);
     rightEncoder = rightSpark.getEncoder();
-    rightController = new TrackedController(rightSpark.getClosedLoopController(), rightEncoder);
+    rightController = new TrackedController(rightSpark.getClosedLoopController());
 
     config = new SparkMaxConfig();
     config
@@ -73,12 +73,14 @@ public class IntakeIOSpark implements IntakeIO {
     config
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .p(0)
+        .p(0.1)
         .i(0)
         .d(0)
-        .p(0, ClosedLoopSlot.kSlot1)
+        .velocityFF(1 / Kv)
+        .p(0.1, ClosedLoopSlot.kSlot1)
         .i(0, ClosedLoopSlot.kSlot1)
         .d(0, ClosedLoopSlot.kSlot1)
+        .velocityFF(1 / Kv, ClosedLoopSlot.kSlot1)
         .maxMotion
         .maxAcceleration(maxAcceleration)
         .maxVelocity(maxVelocity);
@@ -118,7 +120,10 @@ public class IntakeIOSpark implements IntakeIO {
         ifOkOrDefault(leftSpark, leftSpark::getOutputCurrent, inputs.leftCurrentAmps);
     inputs.leftTempCelsius =
         ifOkOrDefault(leftSpark, leftSpark::getMotorTemperature, inputs.leftTempCelsius);
-    inputs.leftControlType = leftController.getControlType();
+    inputs.leftControlType =
+        leftController.getControlType() != null
+            ? leftController.getControlType().toString()
+            : "None";
 
     inputs.rightConnected = !sparkStickyFault;
     inputs.rightPositionRads =
@@ -135,25 +140,28 @@ public class IntakeIOSpark implements IntakeIO {
         ifOkOrDefault(rightSpark, rightSpark::getOutputCurrent, inputs.rightCurrentAmps);
     inputs.rightTempCelsius =
         ifOkOrDefault(rightSpark, rightSpark::getMotorTemperature, inputs.rightTempCelsius);
-    inputs.rightControlType = rightController.getControlType();
+    inputs.rightControlType =
+        rightController.getControlType() != null
+            ? rightController.getControlType().toString()
+            : "None";
   }
 
   @Override
   public void runOpenLoop(double output) {
-    leftSpark.set(output);
-    rightSpark.set(output);
+    leftController.setTrackedReference(output, ControlType.kDutyCycle);
+    rightController.setTrackedReference(output, ControlType.kDutyCycle);
   }
 
   @Override
   public void runVolts(double volts) {
-    leftSpark.setVoltage(volts);
-    rightSpark.setVoltage(volts);
+    leftController.setTrackedReference(volts, ControlType.kVoltage);
+    rightController.setTrackedReference(volts, ControlType.kVoltage);
   }
 
   @Override
-  public void runSeperateVolts(double leftVolts, double rightVolts) {
-    leftSpark.setVoltage(leftVolts);
-    rightSpark.setVoltage(rightVolts);
+  public void runSeparateVolts(double leftVolts, double rightVolts) {
+    leftController.setTrackedReference(leftVolts, ControlType.kVoltage);
+    rightController.setTrackedReference(rightVolts, ControlType.kVoltage);
   }
 
   @Override
@@ -177,8 +185,8 @@ public class IntakeIOSpark implements IntakeIO {
   }
 
   @Override
-  public void setPIDV(double kP, double kI, double kD, double vF) {
-    config.closedLoop.p(kP).i(kI).d(kD).velocityFF(vF);
+  public void setPID(double kP, double kI, double kD) {
+    config.closedLoop.p(kP).i(kI).d(kD);
 
     tryUntilOk(
         leftSpark,

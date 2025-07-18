@@ -4,7 +4,6 @@
 
 package frc.robot.subsystems.elevator;
 
-import com.revrobotics.spark.SparkBase.ControlType;
 import org.littletonrobotics.junction.AutoLog;
 
 /** Add your docs here. */
@@ -12,8 +11,8 @@ public interface ElevatorIO {
 
   @AutoLog
   public static class ElevatorIOInputs {
-    public ControlType elevatorControlType = null;
-    public boolean atSetpoint = false;
+    public String elevatorControlType = null;
+    // public boolean atSetpoint = false;
 
     public boolean leaderConnected = false;
     public double leaderPositionRads = 0.0;

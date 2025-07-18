@@ -42,8 +42,7 @@ public class ElevatorIOSpark implements ElevatorIO {
     leaderSpark = new SparkMax(leader, MotorType.kBrushless);
     leaderEncoder = leaderSpark.getEncoder();
 
-    elevatorController =
-        new TrackedController(leaderSpark.getClosedLoopController(), leaderEncoder);
+    elevatorController = new TrackedController(leaderSpark.getClosedLoopController());
 
     followerSpark = new SparkMax(follower, MotorType.kBrushless);
     followerEncoder = followerSpark.getEncoder();
@@ -93,8 +92,11 @@ public class ElevatorIOSpark implements ElevatorIO {
   public void updateInputs(ElevatorIOInputs inputs) {
     sparkStickyFault = false;
 
-    inputs.elevatorControlType = elevatorController.getControlType();
-    inputs.atSetpoint = elevatorController.atSetpoint().getAsBoolean();
+    inputs.elevatorControlType =
+        elevatorController.getControlType() != null
+            ? elevatorController.getControlType().toString()
+            : "None";
+    // inputs.atSetpoint = elevatorController.atSetpoint().getAsBoolean();
 
     inputs.leaderPositionRads =
         ifOkOrDefault(leaderSpark, leaderEncoder::getPosition, inputs.leaderPositionRads);

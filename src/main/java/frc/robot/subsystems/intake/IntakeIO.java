@@ -4,7 +4,6 @@
 
 package frc.robot.subsystems.intake;
 
-import com.revrobotics.spark.SparkBase.ControlType;
 import org.littletonrobotics.junction.AutoLog;
 
 public interface IntakeIO {
@@ -16,7 +15,7 @@ public interface IntakeIO {
     public double leftAppliedVolts = 0.0;
     public double leftCurrentAmps = 0.0;
     public double leftTempCelsius = 0.0;
-    public ControlType leftControlType = null;
+    public String leftControlType = null;
 
     public boolean rightConnected = false;
     public double rightPositionRads = 0.0;
@@ -24,7 +23,7 @@ public interface IntakeIO {
     public double rightAppliedVolts = 0.0;
     public double rightCurrentAmps = 0.0;
     public double rightTempCelsius = 0.0;
-    public ControlType rightControlType = null;
+    public String rightControlType = null;
   }
 
   default void updateInputs(IntakeIOInputs inputs) {}
@@ -33,7 +32,7 @@ public interface IntakeIO {
 
   default void runVolts(double volts) {}
 
-  default void runSeperateVolts(double leftVolts, double rightVolts) {}
+  default void runSeparateVolts(double leftVolts, double rightVolts) {}
 
   default void stop() {}
 
@@ -41,7 +40,7 @@ public interface IntakeIO {
 
   default void runVelocityMAXMotion(double velocity) {}
 
-  default void setPIDV(double kP, double kI, double kD, double vF) {}
+  default void setPID(double kP, double kI, double kD) {}
 
   default void setBrakeMode(boolean enabled) {}
 }

@@ -18,8 +18,6 @@ public class Intake extends SubsystemBase {
   private static final LoggedTunableNumber kP = new LoggedTunableNumber("Intake/kP", 0.1);
   private static final LoggedTunableNumber kI = new LoggedTunableNumber("Intake/kI", 0.0);
   private static final LoggedTunableNumber kD = new LoggedTunableNumber("Intake/kD", 0.0);
-  private static final LoggedTunableNumber vF = new LoggedTunableNumber("Intake/vF", 0.0);
-
   private final IntakeIO io;
   private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
@@ -42,7 +40,7 @@ public class Intake extends SubsystemBase {
   }
 
   public Command runSeperateVolts(double leftVolts, double rightVolts) {
-    return Commands.runEnd(() -> io.runSeperateVolts(leftVolts, rightVolts), () -> io.stop());
+    return Commands.runEnd(() -> io.runSeparateVolts(leftVolts, rightVolts), () -> io.stop());
   }
 
   public Command runVelocity(double velocity) {

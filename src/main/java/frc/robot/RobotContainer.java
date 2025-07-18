@@ -32,6 +32,7 @@ import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeIOSpark;
 import frc.robot.subsystems.vision.*;
 import frc.robot.util.AutoChooser;
@@ -92,7 +93,7 @@ public class RobotContainer {
                   new ModuleIOTalonFXSim(TunerConstants.BackRight, driveSimulation.getModules()[3]),
                   driveSimulation::setSimulationWorldPose);
           // elevator = new Elevator(new ElevatorIOSim());
-          // intake = new Intake(new IntakeIOSim(null, null, null))
+          intake = new Intake(new IntakeIOSim());
           vision =
               new Vision(
                   drive,
@@ -151,6 +152,8 @@ public class RobotContainer {
                 drive.setPose(
                     new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
     driver.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+
+    operator.Intake().onTrue(intake.runVelocityMAXMotion(400));
   }
 
   public Command getAutonomousCommand() {
