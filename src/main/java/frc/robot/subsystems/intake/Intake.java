@@ -31,23 +31,11 @@ public class Intake extends SubsystemBase {
     Logger.processInputs("Intake", inputs);
   }
 
-  public Command runOpenLoop(double output) {
-    return Commands.runEnd(() -> io.runOpenLoop(output), () -> io.stop());
+  public Command Thru() {
+    return Commands.runEnd(() -> io.runOpenLoop(0.2), () -> io.stop());
   }
 
-  public Command runVolts(double volts) {
-    return Commands.runEnd(() -> io.runVolts(volts), () -> io.stop());
-  }
-
-  public Command runSeperateVolts(double leftVolts, double rightVolts) {
-    return Commands.runEnd(() -> io.runSeparateVolts(leftVolts, rightVolts), () -> io.stop());
-  }
-
-  public Command runVelocity(double velocity) {
-    return Commands.runEnd(() -> io.runVelocity(velocity), () -> io.stop());
-  }
-
-  public Command runVelocityMAXMotion(double velocity) {
-    return Commands.runEnd(() -> io.runVelocityMAXMotion(velocity), () -> io.stop());
+  public Command Spit() {
+    return Commands.runEnd(() -> io.runOpenLoop(0.3), () -> io.stop());
   }
 }

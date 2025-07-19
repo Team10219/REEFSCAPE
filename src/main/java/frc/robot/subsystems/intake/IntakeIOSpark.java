@@ -39,12 +39,12 @@ public class IntakeIOSpark implements IntakeIO {
 
   private SparkMaxConfig config;
 
-  private double maxAcceleration = 10000;
-  private double maxVelocity = 4000;
-  private double Kv = 473;
-  private int currentLimit = 50;
-  private int freeLimit = 40;
-  private boolean brakeModeEnabled = true;
+  protected double maxAcceleration = 10000;
+  protected double maxVelocity = 4000;
+  protected double Kv = 473;
+  protected int currentLimit = 50;
+  protected int freeLimit = 40;
+  protected boolean brakeModeEnabled = true;
 
   public IntakeIOSpark() {
     leftSpark = new SparkMax(left, MotorType.kBrushless);
@@ -156,12 +156,6 @@ public class IntakeIOSpark implements IntakeIO {
   public void runVolts(double volts) {
     leftController.setTrackedReference(volts, ControlType.kVoltage);
     rightController.setTrackedReference(volts, ControlType.kVoltage);
-  }
-
-  @Override
-  public void runSeparateVolts(double leftVolts, double rightVolts) {
-    leftController.setTrackedReference(leftVolts, ControlType.kVoltage);
-    rightController.setTrackedReference(rightVolts, ControlType.kVoltage);
   }
 
   @Override

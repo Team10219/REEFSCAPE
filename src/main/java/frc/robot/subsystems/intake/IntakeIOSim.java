@@ -9,9 +9,11 @@ import static frc.robot.util.SparkUtil.tryUntilOk;
 
 import com.revrobotics.sim.SparkMaxSim;
 import com.revrobotics.sim.SparkRelativeEncoderSim;
+import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
@@ -40,7 +42,24 @@ public class IntakeIOSim extends IntakeIOSpark {
     super();
 
     simConfig = new SparkMaxConfig();
-    simConfig.closedLoop.feedbackSensor(FeedbackSensor.kPrimaryEncoder).p(0.1).i(0.0).d(0.0);
+    simConfig
+        .idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast)
+        .smartCurrentLimit(currentLimit, freeLimit)
+        .voltageCompensation(12.0);
+    simConfig
+        .closedLoop
+        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+        .p(0.1)
+        .i(0.0)
+        .d(0.0)
+        .velocityFF(1 / Kv)
+        .p(0.1, ClosedLoopSlot.kSlot1)
+        .i(0, ClosedLoopSlot.kSlot1)
+        .d(0, ClosedLoopSlot.kSlot1)
+        .velocityFF(1 / Kv, ClosedLoopSlot.kSlot1)
+        .maxMotion
+        .maxAcceleration(maxAcceleration)
+        .maxVelocity(maxVelocity);
 
     leftSparkSim = new SparkMaxSim(leftSpark, DCMotor.getNEO(1));
     leftEncoderSim = leftSparkSim.getRelativeEncoderSim();

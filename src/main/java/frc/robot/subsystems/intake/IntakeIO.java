@@ -32,8 +32,6 @@ public interface IntakeIO {
 
   default void runVolts(double volts) {}
 
-  default void runSeparateVolts(double leftVolts, double rightVolts) {}
-
   default void stop() {}
 
   default void runVelocity(double velocity) {}

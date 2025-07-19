@@ -30,8 +30,10 @@ import frc.robot.oi.OperatorControls;
 import frc.robot.oi.OperatorControlsXbox;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.elevator.Elevator;
+import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeIOSpark;
 import frc.robot.subsystems.vision.*;
@@ -79,7 +81,6 @@ public class RobotContainer {
           break;
         case SIMBOT:
           // Sim robot, instantiate physics sim IO implementations
-
           driveSimulation =
               new SwerveDriveSimulation(Drive.mapleSimConfig, new Pose2d(3, 3, new Rotation2d()));
           SimulatedArena.getInstance().addDriveTrainSimulation(driveSimulation);
@@ -117,6 +118,13 @@ public class RobotContainer {
     if (vision == null) {
       vision = new Vision(drive, new VisionIO() {}, new VisionIO() {});
     }
+    if (elevator == null) {
+      elevator = new Elevator(new ElevatorIO() {});
+    }
+    if (intake == null) {
+      intake = new Intake(new IntakeIO() {});
+    }
+
     // Set up auto routines
     autoChooser = new AutoChooser(drive);
 
@@ -153,8 +161,8 @@ public class RobotContainer {
                     new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
     driver.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-    operator.Intake().onTrue(intake.runVelocityMAXMotion(400));
-    operator.Spit().whileTrue(intake.runVolts(12));
+    operator.Intake().whileTrue(intake.Thru());
+    operator.Spit().whileTrue(intake.Spit());
   }
 
   public Command getAutonomousCommand() {
