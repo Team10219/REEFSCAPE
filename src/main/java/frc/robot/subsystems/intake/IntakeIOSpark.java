@@ -1,11 +1,15 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
+// Copyright (c) 2025 FRC 10219
+// https://github.com/Team10219
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
 
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.*;
 import static frc.robot.canID.intakeID.*;
-import static frc.robot.util.SparkUtil.*;
+import static frc.robot.util.MechanicalAdvantage.SparkUtil.*;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
@@ -17,6 +21,9 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.util.TrackedController;
 import java.util.function.DoubleSupplier;
 
@@ -106,40 +113,54 @@ public class IntakeIOSpark implements IntakeIO {
     sparkStickyFault = false;
 
     inputs.leftConnected = !sparkStickyFault;
-    inputs.leftPositionRads =
-        ifOkOrDefault(leftSpark, leftEncoder::getPosition, inputs.leftPositionRads);
-    inputs.leftVelocityRadPerSec =
-        ifOkOrDefault(leftSpark, leftEncoder::getVelocity, inputs.leftVelocityRadPerSec);
+    inputs.leftAngularVelocityDPS =
+        ifOkOrDefault(
+            leftSpark,
+            leftEncoder::getVelocity,
+            RPM,
+            DegreesPerSecond,
+            inputs.leftAngularVelocityDPS);
     inputs.leftAppliedVolts =
         ifOkOrDefault(
             leftSpark,
             new DoubleSupplier[] {leftSpark::getBusVoltage, leftSpark::getAppliedOutput},
             x -> x[0] * x[1],
+            Volts,
+            Volts,
             inputs.leftAppliedVolts);
     inputs.leftCurrentAmps =
-        ifOkOrDefault(leftSpark, leftSpark::getOutputCurrent, inputs.leftCurrentAmps);
+        ifOkOrDefault(leftSpark, leftSpark::getOutputCurrent, Amps, Amps, inputs.leftCurrentAmps);
     inputs.leftTempCelsius =
-        ifOkOrDefault(leftSpark, leftSpark::getMotorTemperature, inputs.leftTempCelsius);
+        ifOkOrDefault(
+            leftSpark, leftSpark::getMotorTemperature, Celsius, Celsius, inputs.leftTempCelsius);
+    inputs.hello = leftSpark.getMotorTemperature();
     inputs.leftControlType =
         leftController.getControlType() != null
             ? leftController.getControlType().toString()
             : "None";
 
     inputs.rightConnected = !sparkStickyFault;
-    inputs.rightPositionRads =
-        ifOkOrDefault(rightSpark, rightEncoder::getPosition, inputs.rightPositionRads);
-    inputs.rightVelocityRadPerSec =
-        ifOkOrDefault(rightSpark, rightEncoder::getVelocity, inputs.rightVelocityRadPerSec);
+    inputs.rightAngularVelocityDPS =
+        ifOkOrDefault(
+            rightSpark,
+            rightEncoder::getVelocity,
+            RPM,
+            DegreesPerSecond,
+            inputs.rightAngularVelocityDPS);
     inputs.rightAppliedVolts =
         ifOkOrDefault(
             rightSpark,
             new DoubleSupplier[] {rightSpark::getBusVoltage, rightSpark::getAppliedOutput},
             x -> x[0] * x[1],
+            Volts,
+            Volts,
             inputs.rightAppliedVolts);
     inputs.rightCurrentAmps =
-        ifOkOrDefault(rightSpark, rightSpark::getOutputCurrent, inputs.rightCurrentAmps);
+        ifOkOrDefault(
+            rightSpark, rightSpark::getOutputCurrent, Amps, Amps, inputs.rightCurrentAmps);
     inputs.rightTempCelsius =
-        ifOkOrDefault(rightSpark, rightSpark::getMotorTemperature, inputs.rightTempCelsius);
+        ifOkOrDefault(
+            rightSpark, rightSpark::getMotorTemperature, Celsius, Celsius, inputs.rightTempCelsius);
     inputs.rightControlType =
         rightController.getControlType() != null
             ? rightController.getControlType().toString()
@@ -153,9 +174,9 @@ public class IntakeIOSpark implements IntakeIO {
   }
 
   @Override
-  public void runVolts(double volts) {
-    leftController.setTrackedReference(volts, ControlType.kVoltage);
-    rightController.setTrackedReference(volts, ControlType.kVoltage);
+  public void runVolts(Voltage volts) {
+    leftController.setTrackedReference(volts.in(Volts), ControlType.kVoltage);
+    rightController.setTrackedReference(volts.in(Volts), ControlType.kVoltage);
   }
 
   @Override
@@ -165,17 +186,21 @@ public class IntakeIOSpark implements IntakeIO {
   }
 
   @Override
-  public void runVelocity(double velocity) {
-    leftController.setTrackedReference(velocity, ControlType.kVelocity, ClosedLoopSlot.kSlot0);
-    rightController.setTrackedReference(velocity, ControlType.kVelocity, ClosedLoopSlot.kSlot0);
+  public void runVelocity(AngularVelocity velocity) {
+    leftController.setTrackedReference(
+        velocity.in(RPM), ControlType.kVelocity, ClosedLoopSlot.kSlot0); // SparkMax uses RPM
+    rightController.setTrackedReference(
+        velocity.in(RPM),
+        ControlType.kVelocity,
+        ClosedLoopSlot.kSlot0); // and then convert to dps later in logging
   }
 
   @Override
-  public void runVelocityMAXMotion(double velocity) {
+  public void runVelocityMAXMotion(AngularVelocity velocity) {
     leftController.setTrackedReference(
-        velocity, ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
+        velocity.in(RPM), ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
     rightController.setTrackedReference(
-        velocity, ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
+        velocity.in(RPM), ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
   }
 
   @Override

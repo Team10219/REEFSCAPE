@@ -5,7 +5,7 @@
 // license that can be found in the LICENSE file at
 // the root directory of this project.
 
-package frc.robot.subsystems.elevator;
+package frc.robot.util.simulation;
 
 /** Add your docs here. */
-public class ElevatorIOSim extends ElevatorIOSpark {}
+public class IntakeVisualizer {}
