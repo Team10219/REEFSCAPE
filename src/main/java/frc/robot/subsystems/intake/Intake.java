@@ -36,10 +36,14 @@ public class Intake extends SubsystemBase {
   }
 
   public Command Thru() {
-    return Commands.runEnd(() -> io.runOpenLoop(0.2), () -> io.stop());
+    return Commands.runEnd(() -> io.runOpenLoop(-0.125), () -> io.stop());
   }
 
   public Command Spit() {
-    return Commands.runEnd(() -> io.runOpenLoop(0.3), () -> io.stop());
+    return Commands.runEnd(() -> io.runOpenLoop(-0.3), () -> io.stop());
+  }
+
+  public Command setVelocity(double value) {
+    return Commands.runEnd(() -> io.runVelocity(value), () -> io.stop());
   }
 }

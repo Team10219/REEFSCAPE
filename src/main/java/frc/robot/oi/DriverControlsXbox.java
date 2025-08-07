@@ -57,4 +57,39 @@ public class DriverControlsXbox implements DriverControls {
   public Trigger autoAlign(Boolean right) {
     return right ? driver.rightBumper() : driver.leftBumper();
   }
+
+  @Override
+  public Trigger Source() {
+    return driver.povUp();
+  }
+
+  @Override
+  public Trigger Level1() {
+    return driver.povLeft();
+  }
+
+  @Override
+  public Trigger Level2() {
+    return driver.povDown();
+  }
+
+  @Override
+  public Trigger Level3() {
+    return driver.povRight();
+  }
+
+  @Override
+  public Trigger Level4() {
+    return null; // We can't do L4 rn
+  }
+
+  @Override
+  public Trigger Intake() {
+    return driver.leftTrigger();
+  }
+
+  @Override
+  public Trigger Spit() {
+    return driver.rightTrigger();
+  }
 }

@@ -5,7 +5,7 @@
 // license that can be found in the LICENSE file at
 // the root directory of this project.
 
-package frc.robot;
+package frc.robot.util;
 
 /** Add your docs here. */
 public class canID {

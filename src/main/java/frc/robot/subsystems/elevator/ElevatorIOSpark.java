@@ -7,8 +7,8 @@
 
 package frc.robot.subsystems.elevator;
 
-import static frc.robot.canID.ElevatorID.*;
 import static frc.robot.util.MechanicalAdvantage.SparkUtil.*;
+import static frc.robot.util.canID.ElevatorID.*;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkBase.ControlType;
@@ -35,19 +35,19 @@ public class ElevatorIOSpark implements ElevatorIO {
 
   private final SparkMaxConfig config;
 
-  private double maxAcceleration = 10000;
+  private double maxAcceleration = 6000;
   private double maxVelocity = 4000;
   private int currentLimit = 80;
   private int freeLimit = 70;
   private boolean brakeModeEnabled = true;
 
   public ElevatorIOSpark() {
-    leaderSpark = new SparkMax(leader, MotorType.kBrushless);
+    leaderSpark = new SparkMax(2, MotorType.kBrushless);
     leaderEncoder = leaderSpark.getEncoder();
 
     elevatorController = new TrackedController(leaderSpark.getClosedLoopController());
 
-    followerSpark = new SparkMax(follower, MotorType.kBrushless);
+    followerSpark = new SparkMax(3, MotorType.kBrushless);
     followerEncoder = followerSpark.getEncoder();
 
     config = new SparkMaxConfig();
@@ -68,25 +68,28 @@ public class ElevatorIOSpark implements ElevatorIO {
     config
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .p(1)
+        .p(0)
         .i(0)
         .d(0)
         .maxMotion
         .maxAcceleration(maxAcceleration)
-        .maxVelocity(maxVelocity);
+        .maxVelocity(maxVelocity)
+        .allowedClosedLoopError(0.06);
 
     tryUntilOk(
         leaderSpark,
         5,
         () ->
             leaderSpark.configure(
-                config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
+                config.disableFollowerMode(),
+                ResetMode.kResetSafeParameters,
+                PersistMode.kPersistParameters));
     tryUntilOk(
         followerSpark,
         5,
         () ->
             followerSpark.configure(
-                config.follow(leader, true),
+                config.follow(2, true),
                 ResetMode.kResetSafeParameters,
                 PersistMode.kPersistParameters));
   }
@@ -99,8 +102,8 @@ public class ElevatorIOSpark implements ElevatorIO {
         elevatorController.getControlType() != null
             ? elevatorController.getControlType().toString()
             : "None";
-    // inputs.atSetpoint = elevatorController.atSetpoint().getAsBoolean();
 
+    inputs.leaderConnected = !sparkStickyFault;
     inputs.leaderPositionRads =
         ifOkOrDefault(leaderSpark, leaderEncoder::getPosition, inputs.leaderPositionRads);
     inputs.leaderVelocityRadsPerSec =
@@ -116,6 +119,7 @@ public class ElevatorIOSpark implements ElevatorIO {
     inputs.leaderTempCelsius =
         ifOkOrDefault(leaderSpark, leaderSpark::getMotorTemperature, inputs.leaderTempCelsius);
 
+    inputs.followerConnected = !sparkStickyFault;
     inputs.followerPositionRads =
         ifOkOrDefault(followerSpark, followerEncoder::getPosition, inputs.followerPositionRads);
     inputs.followerVelocityRadsPerSec =
@@ -137,6 +141,7 @@ public class ElevatorIOSpark implements ElevatorIO {
   @Override
   public void runOpenLoop(double output) {
     leaderSpark.set(output);
+    System.out.println("running open loop elevator");
   }
 
   @Override
@@ -156,6 +161,28 @@ public class ElevatorIOSpark implements ElevatorIO {
   }
 
   @Override
+  public void setPID(double kP, double kI, double kD) {
+    config.closedLoop.pid(kP, kI, kD);
+
+    tryUntilOk(
+        leaderSpark,
+        5,
+        () ->
+            leaderSpark.configure(
+                config.disableFollowerMode(),
+                ResetMode.kNoResetSafeParameters,
+                PersistMode.kPersistParameters));
+    tryUntilOk(
+        followerSpark,
+        5,
+        () ->
+            followerSpark.configure(
+                config.follow(2, true),
+                ResetMode.kNoResetSafeParameters,
+                PersistMode.kPersistParameters));
+  }
+
+  @Override
   public void setBrakeMode(boolean enabled) {
     if (brakeModeEnabled == enabled) return;
     new Thread(
@@ -165,16 +192,20 @@ public class ElevatorIOSpark implements ElevatorIO {
                   5,
                   () ->
                       leaderSpark.configure(
-                          config.idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast),
-                          ResetMode.kResetSafeParameters,
+                          config
+                              .idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast)
+                              .disableFollowerMode(),
+                          ResetMode.kNoResetSafeParameters,
                           PersistMode.kPersistParameters));
               tryUntilOk(
                   followerSpark,
                   5,
                   () ->
                       followerSpark.configure(
-                          config.idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast),
-                          ResetMode.kResetSafeParameters,
+                          config
+                              .idleMode(brakeModeEnabled ? IdleMode.kBrake : IdleMode.kCoast)
+                              .follow(2, true),
+                          ResetMode.kNoResetSafeParameters,
                           PersistMode.kPersistParameters));
             })
         .start();

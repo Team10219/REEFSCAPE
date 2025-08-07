@@ -7,8 +7,8 @@
 
 package frc.robot.subsystems.intake;
 
-import static frc.robot.canID.intakeID.*;
 import static frc.robot.util.MechanicalAdvantage.SparkUtil.*;
+import static frc.robot.util.canID.intakeID.*;
 
 /** Add your docs here. */
 public class IntakeIOSim {

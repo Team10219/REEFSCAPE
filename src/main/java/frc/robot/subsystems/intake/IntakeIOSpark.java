@@ -8,8 +8,8 @@
 package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.*;
-import static frc.robot.canID.intakeID.*;
 import static frc.robot.util.MechanicalAdvantage.SparkUtil.*;
+import static frc.robot.util.canID.intakeID.*;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
@@ -21,9 +21,6 @@ import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.util.TrackedController;
 import java.util.function.DoubleSupplier;
 
@@ -113,27 +110,18 @@ public class IntakeIOSpark implements IntakeIO {
     sparkStickyFault = false;
 
     inputs.leftConnected = !sparkStickyFault;
-    inputs.leftAngularVelocityDPS =
-        ifOkOrDefault(
-            leftSpark,
-            leftEncoder::getVelocity,
-            RPM,
-            DegreesPerSecond,
-            inputs.leftAngularVelocityDPS);
+    inputs.leftVelocityRPM =
+        ifOkOrDefault(leftSpark, leftEncoder::getVelocity, inputs.leftVelocityRPM);
     inputs.leftAppliedVolts =
         ifOkOrDefault(
             leftSpark,
             new DoubleSupplier[] {leftSpark::getBusVoltage, leftSpark::getAppliedOutput},
             x -> x[0] * x[1],
-            Volts,
-            Volts,
             inputs.leftAppliedVolts);
     inputs.leftCurrentAmps =
-        ifOkOrDefault(leftSpark, leftSpark::getOutputCurrent, Amps, Amps, inputs.leftCurrentAmps);
+        ifOkOrDefault(leftSpark, leftSpark::getOutputCurrent, inputs.leftCurrentAmps);
     inputs.leftTempCelsius =
-        ifOkOrDefault(
-            leftSpark, leftSpark::getMotorTemperature, Celsius, Celsius, inputs.leftTempCelsius);
-    inputs.hello = leftSpark.getMotorTemperature();
+        ifOkOrDefault(leftSpark, leftSpark::getMotorTemperature, inputs.leftTempCelsius);
     inputs.leftControlType =
         leftController.getControlType() != null
             ? leftController.getControlType().toString()
@@ -141,26 +129,17 @@ public class IntakeIOSpark implements IntakeIO {
 
     inputs.rightConnected = !sparkStickyFault;
     inputs.rightAngularVelocityDPS =
-        ifOkOrDefault(
-            rightSpark,
-            rightEncoder::getVelocity,
-            RPM,
-            DegreesPerSecond,
-            inputs.rightAngularVelocityDPS);
+        ifOkOrDefault(rightSpark, rightEncoder::getVelocity, inputs.rightAngularVelocityDPS);
     inputs.rightAppliedVolts =
         ifOkOrDefault(
             rightSpark,
             new DoubleSupplier[] {rightSpark::getBusVoltage, rightSpark::getAppliedOutput},
             x -> x[0] * x[1],
-            Volts,
-            Volts,
             inputs.rightAppliedVolts);
     inputs.rightCurrentAmps =
-        ifOkOrDefault(
-            rightSpark, rightSpark::getOutputCurrent, Amps, Amps, inputs.rightCurrentAmps);
+        ifOkOrDefault(rightSpark, rightSpark::getOutputCurrent, inputs.rightCurrentAmps);
     inputs.rightTempCelsius =
-        ifOkOrDefault(
-            rightSpark, rightSpark::getMotorTemperature, Celsius, Celsius, inputs.rightTempCelsius);
+        ifOkOrDefault(rightSpark, rightSpark::getMotorTemperature, inputs.rightTempCelsius);
     inputs.rightControlType =
         rightController.getControlType() != null
             ? rightController.getControlType().toString()
@@ -174,9 +153,9 @@ public class IntakeIOSpark implements IntakeIO {
   }
 
   @Override
-  public void runVolts(Voltage volts) {
-    leftController.setTrackedReference(volts.in(Volts), ControlType.kVoltage);
-    rightController.setTrackedReference(volts.in(Volts), ControlType.kVoltage);
+  public void runVolts(double volts) {
+    leftController.setTrackedReference(volts, ControlType.kVoltage);
+    rightController.setTrackedReference(volts, ControlType.kVoltage);
   }
 
   @Override
@@ -186,21 +165,17 @@ public class IntakeIOSpark implements IntakeIO {
   }
 
   @Override
-  public void runVelocity(AngularVelocity velocity) {
-    leftController.setTrackedReference(
-        velocity.in(RPM), ControlType.kVelocity, ClosedLoopSlot.kSlot0); // SparkMax uses RPM
-    rightController.setTrackedReference(
-        velocity.in(RPM),
-        ControlType.kVelocity,
-        ClosedLoopSlot.kSlot0); // and then convert to dps later in logging
+  public void runVelocity(double velocity) {
+    leftController.setTrackedReference(velocity, ControlType.kVelocity, ClosedLoopSlot.kSlot0);
+    rightController.setTrackedReference(velocity, ControlType.kVelocity, ClosedLoopSlot.kSlot0);
   }
 
   @Override
-  public void runVelocityMAXMotion(AngularVelocity velocity) {
+  public void runVelocityMAXMotion(double velocity) {
     leftController.setTrackedReference(
-        velocity.in(RPM), ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
+        velocity, ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
     rightController.setTrackedReference(
-        velocity.in(RPM), ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
+        velocity, ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
   }
 
   @Override

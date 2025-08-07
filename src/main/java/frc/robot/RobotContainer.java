@@ -20,8 +20,6 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.generated.TunerConstants;
 import frc.robot.oi.DriverControls;
 import frc.robot.oi.DriverControlsXbox;
-import frc.robot.oi.OperatorControls;
-import frc.robot.oi.OperatorControlsXbox;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
@@ -44,7 +42,6 @@ public class RobotContainer {
   private Vision vision;
 
   private DriverControls driver;
-  private OperatorControls operator;
 
   private SwerveDriveSimulation driveSimulation = null;
 
@@ -128,7 +125,6 @@ public class RobotContainer {
 
   private void configureControllers() {
     driver = new DriverControlsXbox(0);
-    operator = new OperatorControlsXbox(1);
   }
 
   private void configureButtonBindings() {
@@ -155,8 +151,13 @@ public class RobotContainer {
                     new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
     driver.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-    operator.Intake().whileTrue(intake.Thru());
-    operator.Spit().whileTrue(intake.Spit());
+    driver.Source().onTrue(elevator.goToStation());
+    driver.Level1().onTrue(elevator.goToL1());
+    driver.Level2().onTrue(elevator.goToL2());
+    driver.Level3().onTrue(elevator.goToL3());
+
+    driver.Intake().whileTrue(intake.Thru());
+    driver.Spit().whileTrue(intake.Spit());
   }
 
   public Command getAutonomousCommand() {

@@ -26,4 +26,18 @@ public interface DriverControls {
   public Trigger reefFace();
 
   public Trigger autoAlign(Boolean right);
+
+  public Trigger Source();
+
+  public Trigger Level1();
+
+  public Trigger Level2();
+
+  public Trigger Level3();
+
+  public Trigger Level4();
+
+  public Trigger Intake();
+
+  public Trigger Spit();
 }
