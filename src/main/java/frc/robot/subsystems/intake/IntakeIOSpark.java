@@ -9,7 +9,7 @@ package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.*;
 import static frc.robot.util.MechanicalAdvantage.SparkUtil.*;
-import static frc.robot.util.canID.intakeID.*;
+import static frc.robot.util.canID.intakeID;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
@@ -51,11 +51,11 @@ public class IntakeIOSpark implements IntakeIO {
   protected boolean brakeModeEnabled = true;
 
   public IntakeIOSpark() {
-    leftSpark = new SparkMax(left, MotorType.kBrushless);
+    leftSpark = new SparkMax(intakeID.left, MotorType.kBrushless);
     leftEncoder = leftSpark.getEncoder();
     leftController = new TrackedController(leftSpark.getClosedLoopController());
 
-    rightSpark = new SparkMax(right, MotorType.kBrushless);
+    rightSpark = new SparkMax(intakeID.right, MotorType.kBrushless);
     rightEncoder = rightSpark.getEncoder();
     rightController = new TrackedController(rightSpark.getClosedLoopController());
 

@@ -34,9 +34,9 @@ public class Elevator extends SubsystemBase {
         kD.initDefault(0.24);
       }
       case SIMBOT -> {
-        kP.initDefault(0);
-        kI.initDefault(0);
-        kD.initDefault(0);
+        kP.initDefault(0.065);
+        kI.initDefault(0.000007);
+        kD.initDefault(0.24);
       }
     }
   }
@@ -55,7 +55,6 @@ public class Elevator extends SubsystemBase {
 
     if (kP.hasChanged(hashCode()) || kI.hasChanged(hashCode()) || kD.hasChanged(hashCode())) {
       io.setPID(kP.get(), kI.get(), kD.get());
-      System.out.println("Elevator Changing PID");
     }
   }
 
@@ -72,22 +71,22 @@ public class Elevator extends SubsystemBase {
    * RobotContainer, and i want to maintain readability
    */
   public Command goToStation() {
-    return Commands.run(() -> io.setPosition(Station.get()));
+    return Commands.runOnce(() -> io.setPosition(Station.get()));
   }
 
   public Command goToL1() {
-    return Commands.run(() -> io.setPosition(L1.get()));
+    return Commands.runOnce(() -> io.setPosition(L1.get()));
   }
 
   public Command goToL2() {
-    return Commands.run(() -> io.setPosition(L2.get()));
+    return Commands.runOnce(() -> io.setPosition(L2.get()));
   }
 
   public Command goToL3() {
-    return Commands.run(() -> io.setPosition(L3.get()));
+    return Commands.runOnce(() -> io.setPosition(L3.get()));
   }
 
   public Command goToL4() {
-    return Commands.run(() -> io.setPosition(L4.get()));
+    return Commands.runOnce(() -> io.setPosition(L4.get()));
   }
 }

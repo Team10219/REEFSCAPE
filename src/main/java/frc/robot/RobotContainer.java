@@ -26,7 +26,6 @@ import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakeIO;
-// import frc.robot.subsystems.intake.IntakeIOSim;
 import frc.robot.subsystems.intake.IntakeIOSpark;
 import frc.robot.subsystems.vision.*;
 import frc.robot.util.AutoChooser;
@@ -84,8 +83,8 @@ public class RobotContainer {
                   new ModuleIOTalonFXSim(TunerConstants.BackLeft, driveSimulation.getModules()[2]),
                   new ModuleIOTalonFXSim(TunerConstants.BackRight, driveSimulation.getModules()[3]),
                   driveSimulation::setSimulationWorldPose);
-          // elevator = new Elevator(new ElevatorIOSim());
-          // intake = new Intake(new IntakeIOSim());
+          elevator = new Elevator(new ElevatorIOSpark());
+          intake = new Intake(new IntakeIOSpark());
           vision =
               new Vision(
                   drive,

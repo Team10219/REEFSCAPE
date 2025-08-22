@@ -141,7 +141,6 @@ public class ElevatorIOSpark implements ElevatorIO {
   @Override
   public void runOpenLoop(double output) {
     leaderSpark.set(output);
-    System.out.println("running open loop elevator");
   }
 
   @Override
