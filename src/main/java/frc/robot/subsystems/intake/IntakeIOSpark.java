@@ -77,7 +77,7 @@ public class IntakeIOSpark implements IntakeIO {
     config
         .closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .p(0.1)
+        .p(0)
         .i(0)
         .d(0)
         .velocityFF(1 / Kv)
@@ -128,8 +128,8 @@ public class IntakeIOSpark implements IntakeIO {
             : "None";
 
     inputs.rightConnected = !sparkStickyFault;
-    inputs.rightAngularVelocityDPS =
-        ifOkOrDefault(rightSpark, rightEncoder::getVelocity, inputs.rightAngularVelocityDPS);
+    inputs.rightVelocityRPM =
+        ifOkOrDefault(rightSpark, rightEncoder::getVelocity, inputs.rightVelocityRPM);
     inputs.rightAppliedVolts =
         ifOkOrDefault(
             rightSpark,
@@ -168,14 +168,6 @@ public class IntakeIOSpark implements IntakeIO {
   public void runVelocity(double velocity) {
     leftController.setTrackedReference(velocity, ControlType.kVelocity, ClosedLoopSlot.kSlot0);
     rightController.setTrackedReference(velocity, ControlType.kVelocity, ClosedLoopSlot.kSlot0);
-  }
-
-  @Override
-  public void runVelocityMAXMotion(double velocity) {
-    leftController.setTrackedReference(
-        velocity, ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
-    rightController.setTrackedReference(
-        velocity, ControlType.kMAXMotionVelocityControl, ClosedLoopSlot.kSlot1);
   }
 
   @Override

@@ -22,7 +22,7 @@ public interface IntakeIO {
     public String leftControlType = null;
 
     public boolean rightConnected = false;
-    public double rightAngularVelocityDPS = 0.0;
+    public double rightVelocityRPM = 0.0;
     public double rightAppliedVolts = 0.0;
     public double rightCurrentAmps = 0.0;
     public double rightTempCelsius = 0.0;
@@ -36,8 +36,6 @@ public interface IntakeIO {
   default void runVolts(double volts) {}
 
   default void runVelocity(double velocity) {}
-
-  default void runVelocityMAXMotion(double velocity) {}
 
   default void setPID(double kP, double kI, double kD) {}
 

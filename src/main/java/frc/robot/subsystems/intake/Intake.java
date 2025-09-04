@@ -10,6 +10,7 @@ package frc.robot.subsystems.intake;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
 import frc.robot.util.MechanicalAdvantage.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
@@ -21,6 +22,22 @@ public class Intake extends SubsystemBase {
   private static final LoggedTunableNumber kP = new LoggedTunableNumber("Intake/kP", 0.1);
   private static final LoggedTunableNumber kI = new LoggedTunableNumber("Intake/kI", 0.0);
   private static final LoggedTunableNumber kD = new LoggedTunableNumber("Intake/kD", 0.0);
+
+  static {
+    switch (Constants.getRobot()) {
+      case COMPBOT -> {
+        kP.initDefault(0.1);
+        kI.initDefault(0.0);
+        kD.initDefault(0.0);
+      }
+      case SIMBOT -> {
+        kP.initDefault(0.1);
+        kI.initDefault(0.0);
+        kD.initDefault(0.0);
+      }
+    }
+  }
+
   private final IntakeIO io;
   private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
@@ -33,14 +50,18 @@ public class Intake extends SubsystemBase {
     io.updateInputs(inputs);
 
     Logger.processInputs("Intake", inputs);
+
+    if (kP.hasChanged(hashCode()) || kI.hasChanged(hashCode()) || kD.hasChanged(hashCode())) {
+      io.setPID(kP.get(), kI.get(), kD.get());
+    }
   }
 
   public Command Thru() {
-    return Commands.runEnd(() -> io.runOpenLoop(-0.125), () -> io.stop());
+    return Commands.runEnd(() -> io.runOpenLoop(-0.1), () -> io.stop());
   }
 
   public Command Spit() {
-    return Commands.runEnd(() -> io.runOpenLoop(-0.3), () -> io.stop());
+    return Commands.runEnd(() -> io.runOpenLoop(-0.45), () -> io.stop());
   }
 
   public Command setVelocity(double value) {
