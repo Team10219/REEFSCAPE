@@ -31,7 +31,6 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.Constants;
 import frc.robot.Constants.RobotType;
-import frc.robot.generated.TunerConstants;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 

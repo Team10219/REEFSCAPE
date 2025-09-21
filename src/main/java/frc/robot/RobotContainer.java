@@ -17,9 +17,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants.RobotType;
 import frc.robot.commands.DriveCommands;
-import frc.robot.generated.TunerConstants;
-import frc.robot.oi.DriverControls;
-import frc.robot.oi.DriverControlsXbox;
+import frc.robot.controls.Controls;
+import frc.robot.controls.ControlsXbox;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
@@ -40,7 +39,7 @@ public class RobotContainer {
   private Intake intake;
   private Vision vision;
 
-  private DriverControls driver;
+  private Controls driver;
 
   private SwerveDriveSimulation driveSimulation = null;
 
@@ -123,7 +122,7 @@ public class RobotContainer {
   }
 
   private void configureControllers() {
-    driver = new DriverControlsXbox(0);
+    driver = new ControlsXbox(0);
   }
 
   private void configureButtonBindings() {
