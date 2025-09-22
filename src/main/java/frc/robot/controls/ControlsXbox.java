@@ -9,6 +9,7 @@ package frc.robot.controls;
 
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.util.MechanicalAdvantage.AllianceFlipUtil;
 
 /** Add your docs here. */
 public class ControlsXbox implements Controls {
@@ -20,12 +21,12 @@ public class ControlsXbox implements Controls {
 
   @Override
   public double getForward() {
-    return -driver.getLeftY();
+    return AllianceFlipUtil.shouldFlip() ? driver.getLeftY() : -driver.getLeftY();
   }
 
   @Override
   public double getStrafe() {
-    return -driver.getLeftX();
+    return AllianceFlipUtil.shouldFlip() ? driver.getLeftX() : -driver.getLeftX();
   }
 
   @Override

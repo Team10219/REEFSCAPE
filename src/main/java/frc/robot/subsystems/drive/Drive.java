@@ -23,9 +23,11 @@ import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
+import edu.wpi.first.math.geometry.Twist3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -43,11 +45,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.RobotType;
+import frc.robot.RobotState;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.util.LocalADStarAK;
 import frc.robot.util.MechanicalAdvantage.LoggedTracer;
 import frc.robot.util.MechanicalAdvantage.LoggedTunableNumber;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -245,6 +249,45 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
         lastModulePositions[moduleIndex] = modulePositions[moduleIndex];
       }
 
+      // Now that all module positions are populated, publish odometry observation and logs once per
+      // sample
+      RobotState.getInstance()
+          .addOdometryObservation(
+              new RobotState.OdometryObservation(
+                  modulePositions,
+                  Optional.ofNullable(
+                      gyroInputs.connected ? gyroInputs.odometryYawPositions[i] : null),
+                  sampleTimestamps[i]));
+
+      // Log 3D robot pose
+      Logger.recordOutput(
+          "RobotState/EstimatedPose3d",
+          new Pose3d(RobotState.getInstance().getEstimatedPose())
+              .exp(
+                  new Twist3d(
+                      0.0,
+                      0.0,
+                      Math.abs(gyroInputs.pitchPosition.getRadians())
+                          * TunerConstants.trackWidthX
+                          / 2.0,
+                      0.0,
+                      gyroInputs.pitchPosition.getRadians(),
+                      0.0))
+              .exp(
+                  new Twist3d(
+                      0.0,
+                      0.0,
+                      Math.abs(gyroInputs.rollPosition.getRadians())
+                          * TunerConstants.trackWidthY
+                          / 2.0,
+                      gyroInputs.rollPosition.getRadians(),
+                      0.0,
+                      0.0)));
+
+      RobotState.getInstance().addDriveSpeeds(getChassisSpeeds());
+      RobotState.getInstance().setPitch(gyroInputs.pitchPosition);
+      RobotState.getInstance().setRoll(gyroInputs.rollPosition);
+
       // Update gyro angle
       if (gyroInputs.connected) {
         // Use the real gyro angle
@@ -433,6 +476,11 @@ public class Drive extends SubsystemBase implements Vision.VisionConsumer {
       Matrix<N3, N1> visionMeasurementStdDevs) {
     poseEstimator.addVisionMeasurement(
         visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs);
+
+    RobotState.getInstance()
+        .addVisionObservation(
+            new RobotState.VisionObservation(
+                visionRobotPoseMeters, timestampSeconds, visionMeasurementStdDevs));
   }
 
   /** Returns the maximum linear speed in meters per sec. */

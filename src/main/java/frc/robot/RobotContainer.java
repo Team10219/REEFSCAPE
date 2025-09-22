@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants.RobotType;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.DriveToPose;
 import frc.robot.controls.Controls;
 import frc.robot.controls.ControlsXbox;
 import frc.robot.subsystems.drive.*;
@@ -28,6 +29,7 @@ import frc.robot.subsystems.intake.IntakeIO;
 import frc.robot.subsystems.intake.IntakeIOSpark;
 import frc.robot.subsystems.vision.*;
 import frc.robot.util.AutoChooser;
+import frc.robot.util.MechanicalAdvantage.FieldConstants;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
@@ -156,6 +158,17 @@ public class RobotContainer {
 
     driver.Intake().whileTrue(intake.Thru());
     driver.Spit().whileTrue(intake.Spit());
+
+    driver
+        .autoAlign(false)
+        .whileTrue(
+            new DriveToPose(
+                drive,
+                () ->
+                    new Pose2d(
+                        FieldConstants.Reef.center.getX(),
+                        FieldConstants.Reef.center.getY() - 2,
+                        RobotState.getInstance().getRotation())));
   }
 
   public Command getAutonomousCommand() {
@@ -166,7 +179,11 @@ public class RobotContainer {
   public void resetSimulationField() {
     if (Constants.getRobot() != RobotType.SIMBOT) return;
 
-    driveSimulation.setSimulationWorldPose(new Pose2d(3, 3, new Rotation2d()));
+    driveSimulation.setSimulationWorldPose(
+        new Pose2d(
+            FieldConstants.startingLineX,
+            FieldConstants.fieldWidth / 2.0,
+            new Rotation2d(Math.PI)));
     SimulatedArena.getInstance().resetFieldForAuto();
   }
 
