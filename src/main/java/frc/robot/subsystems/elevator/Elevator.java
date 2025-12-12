@@ -21,6 +21,7 @@ public class Elevator extends SubsystemBase {
   private static final LoggedTunableNumber L2 = new LoggedTunableNumber("Elevator/L2", 18);
   private static final LoggedTunableNumber L3 = new LoggedTunableNumber("Elevator/L3", 29);
   private static final LoggedTunableNumber L4 = new LoggedTunableNumber("Elevator/L4", 45);
+  private static final LoggedTunableNumber Hoop = new LoggedTunableNumber("Elevator/Hoop", 0);
 
   private static final LoggedTunableNumber kP = new LoggedTunableNumber("Elevator/ClosedLoop/kP");
   private static final LoggedTunableNumber kI = new LoggedTunableNumber("Elevator/ClosedLoop/kI");
@@ -66,10 +67,6 @@ public class Elevator extends SubsystemBase {
     return Commands.runEnd(() -> io.runVolts(volts), () -> io.stop());
   }
 
-  /**
-   * Why dont I just use setposition for everything? Simple, it would make it look ugly in
-   * RobotContainer, and i want to maintain readability
-   */
   public Command goToStation() {
     return Commands.runOnce(() -> io.setPosition(Station.get()));
   }
@@ -88,5 +85,9 @@ public class Elevator extends SubsystemBase {
 
   public Command goToL4() {
     return Commands.runOnce(() -> io.setPosition(L4.get()));
+  }
+
+  public Command goToHoop() {
+    return Commands.runOnce(() -> io.setPosition(Hoop.get()));
   }
 }

@@ -13,70 +13,70 @@ import frc.robot.util.MechanicalAdvantage.AllianceFlipUtil;
 
 /** Add your docs here. */
 public class ControlsXbox implements Controls {
-  private CommandXboxController driver;
+  private CommandXboxController controller;
 
   public ControlsXbox(int port) {
-    driver = new CommandXboxController(port);
+    controller = new CommandXboxController(port);
   }
 
   @Override
   public double getForward() {
-    return AllianceFlipUtil.shouldFlip() ? driver.getLeftY() : -driver.getLeftY();
+    return AllianceFlipUtil.shouldFlip() ? controller.getLeftY() : -controller.getLeftY();
   }
 
   @Override
   public double getStrafe() {
-    return AllianceFlipUtil.shouldFlip() ? driver.getLeftX() : -driver.getLeftX();
+    return AllianceFlipUtil.shouldFlip() ? controller.getLeftX() : -controller.getLeftX();
   }
 
   @Override
   public double getTurn() {
-    return -driver.getRightX();
+    return -controller.getRightX();
   }
 
   @Override
   public Trigger resetFieldCentric() {
-    return driver.start();
+    return controller.start();
   }
 
   @Override
   public Trigger lockToZero() {
-    return driver.back();
+    return controller.back();
   }
 
   @Override
   public Trigger xWheels() {
-    return driver.x();
+    return controller.x();
   }
 
   @Override
   public Trigger reefFace() {
-    return driver.b();
+    return controller.b();
   }
 
   @Override
   public Trigger autoAlign(Boolean right) {
-    return right ? driver.rightBumper() : driver.leftBumper();
+    return right ? controller.rightBumper() : controller.leftBumper();
   }
 
   @Override
   public Trigger Source() {
-    return driver.povUp();
+    return controller.povUp();
   }
 
   @Override
   public Trigger Level1() {
-    return driver.povLeft();
+    return controller.povLeft();
   }
 
   @Override
   public Trigger Level2() {
-    return driver.povDown();
+    return controller.povDown();
   }
 
   @Override
   public Trigger Level3() {
-    return driver.povRight();
+    return controller.povRight();
   }
 
   @Override
@@ -85,12 +85,17 @@ public class ControlsXbox implements Controls {
   }
 
   @Override
+  public Trigger hoopHeight() {
+    return controller.x();
+  }
+
+  @Override
   public Trigger Intake() {
-    return driver.leftTrigger();
+    return controller.leftTrigger();
   }
 
   @Override
   public Trigger Spit() {
-    return driver.rightTrigger();
+    return controller.rightTrigger();
   }
 }

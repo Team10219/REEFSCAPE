@@ -37,6 +37,8 @@ public interface Controls {
 
   public Trigger Level4();
 
+  public Trigger hoopHeight();
+
   public Trigger Intake();
 
   public Trigger Spit();

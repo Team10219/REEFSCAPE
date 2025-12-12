@@ -12,7 +12,6 @@ import static frc.robot.subsystems.vision.VisionConstants.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.Constants.RobotType;
@@ -41,7 +40,7 @@ public class RobotContainer {
   private Intake intake;
   private Vision vision;
 
-  private Controls driver;
+  private Controls controller;
 
   private SwerveDriveSimulation driveSimulation = null;
 
@@ -51,7 +50,6 @@ public class RobotContainer {
 
   @SuppressWarnings("unused")
   public RobotContainer() {
-    DriverStation.silenceJoystickConnectionWarning(true);
     if (Constants.getMode() != Constants.Mode.REPLAY) {
       switch (Constants.getRobot()) {
         case COMPBOT:
@@ -66,9 +64,9 @@ public class RobotContainer {
                   (pose) -> {});
           elevator = new Elevator(new ElevatorIOSpark());
           intake = new Intake(new IntakeIOSpark());
-          this.vision =
-              new Vision(
-                  drive, new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation));
+          // this.vision =
+          //     new Vision(
+          //         drive, new VisionIOLimelight(VisionConstants.camera0Name, drive::getRotation));
           break;
         case SIMBOT:
           // Sim robot, instantiate physics sim IO implementations
@@ -124,20 +122,21 @@ public class RobotContainer {
   }
 
   private void configureControllers() {
-    driver = new ControlsXbox(0);
+    controller = new ControlsXbox(0);
   }
 
   private void configureButtonBindings() {
     drive.setDefaultCommand( // Default command, normal field-relative drive
-        DriveCommands.joystickDrive(drive, driver::getForward, driver::getStrafe, driver::getTurn));
+        DriveCommands.joystickDrive(
+            drive, controller::getForward, controller::getStrafe, controller::getTurn));
 
-    driver // Lock to 0° when A button is held
+    controller // Lock to 0° when A button is held
         .lockToZero()
         .whileTrue(
             DriveCommands.joystickDriveAtAngle(
-                drive, driver::getForward, driver::getStrafe, () -> new Rotation2d()));
+                drive, controller::getForward, controller::getStrafe, () -> new Rotation2d()));
 
-    driver
+    controller
         .xWheels()
         .onTrue(
             Commands.runOnce(
@@ -149,17 +148,17 @@ public class RobotContainer {
             : () ->
                 drive.setPose(
                     new Pose2d(drive.getPose().getTranslation(), new Rotation2d())); // zero gyro
-    driver.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
+    controller.resetFieldCentric().onTrue(Commands.runOnce(resetGyro, drive).ignoringDisable(true));
 
-    driver.Source().onTrue(elevator.goToStation());
-    driver.Level1().onTrue(elevator.goToL1());
-    driver.Level2().onTrue(elevator.goToL2());
-    driver.Level3().onTrue(elevator.goToL3());
+    controller.Source().onTrue(elevator.goToStation());
+    controller.Level1().onTrue(elevator.goToL1());
+    controller.Level2().onTrue(elevator.goToL2());
+    controller.Level3().onTrue(elevator.goToL3());
 
-    driver.Intake().whileTrue(intake.Thru());
-    driver.Spit().whileTrue(intake.Spit());
+    controller.Intake().whileTrue(intake.Thru());
+    controller.Spit().whileTrue(intake.Spit());
 
-    driver
+    controller
         .autoAlign(false)
         .whileTrue(
             new DriveToPose(

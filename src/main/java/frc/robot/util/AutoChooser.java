@@ -39,7 +39,7 @@ public class AutoChooser {
                     Barge.middleCage.getY(),
                     RobotState.getInstance().getRotation())));
 
-    if (Constants.tuningMode == true) {
+    if (Constants.tuningMode) {
       chooser.addOption(
           "Drive Wheel Radius Characterization", DriveCommands.wheelRadiusCharacterization(drive));
       chooser.addOption(
